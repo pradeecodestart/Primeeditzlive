@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { getRegisteredUserByEmail } from './registeredUsersStore';
@@ -18,6 +19,7 @@ export const STAFF_ROLES: UserRole[] = [
   'EDITOR',
   'ACCOUNTANT',
   'SALES',
+  'CLIENT',
 ];
 
 export const CLIENT_ROLES: UserRole[] = ['CLIENT'];
@@ -43,6 +45,14 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
   providers: [
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       id: 'credentials',
       name: 'credentials',
@@ -159,15 +169,15 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
-        token.avatar = (user as any).avatar;
+        token.role = (user as any).role || 'CLIENT';
+        token.avatar = (user as any).avatar || (user as any).image;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         (session.user as any).id = token.id as string;
-        (session.user as any).role = token.role as any;
+        (session.user as any).role = (token.role as any) || 'CLIENT';
         (session.user as any).avatar = token.avatar as any;
       }
       return session;
