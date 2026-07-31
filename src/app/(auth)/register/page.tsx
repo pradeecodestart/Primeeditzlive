@@ -42,14 +42,13 @@ export default function RegisterPage() {
       });
 
       if (res?.ok) {
-        router.push('/dashboard');
-        router.refresh();
+        window.location.href = '/dashboard';
       } else {
-        router.push('/login');
+        window.location.href = '/login';
       }
     } catch (err: any) {
       setErrorMessage(err.response?.data?.message || 'Account created! Redirecting to login...');
-      setTimeout(() => router.push('/login'), 1200);
+      setTimeout(() => { window.location.href = '/login'; }, 1200);
     }
   };
 
