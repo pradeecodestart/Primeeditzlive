@@ -51,11 +51,13 @@ export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId:
-        process.env.GOOGLE_CLIENT_ID ||
-        `${'322742467265'}-${'h1ulas8bao8t7eu6ephn86kibjdj0u97'}.${'apps.googleusercontent.com'}`,
+        (process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_ID.trim().length > 5)
+          ? process.env.GOOGLE_CLIENT_ID.trim()
+          : `${'322742467265'}-${'h1ulas8bao8t7eu6ephn86kibjdj0u97'}.${'apps.googleusercontent.com'}`,
       clientSecret:
-        process.env.GOOGLE_CLIENT_SECRET ||
-        `${'GOCSPX'}-${'pXCUwUss'}-${'wuYTaerYcjihDItkK3o'}`,
+        (process.env.GOOGLE_CLIENT_SECRET?.trim() && process.env.GOOGLE_CLIENT_SECRET.trim().length > 5)
+          ? process.env.GOOGLE_CLIENT_SECRET.trim()
+          : `${'GOCSPX'}-${'pXCUwUss'}-${'wuYTaerYcjihDItkK3o'}`,
       authorization: {
         params: {
           prompt: 'select_account',
