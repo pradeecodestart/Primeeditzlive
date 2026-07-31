@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "postprod-pro",
   "framework": "nextjs",
   "buildCommand": "prisma generate && prisma db push && next build",
   "installCommand": "npm install",
