@@ -5,10 +5,10 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { getRegisteredUserByEmail } from './registeredUsersStore';
 
-if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-} else if (process.env.VERCEL_URL && (process.env.NODE_ENV === 'production' || !process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('localhost'))) {
+if (process.env.VERCEL_URL) {
   process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+} else if (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('localhost')) {
+  process.env.NEXTAUTH_URL = 'https://primeeditzlive.vercel.app';
 }
 
 export type UserRole =
