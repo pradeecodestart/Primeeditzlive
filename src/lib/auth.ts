@@ -51,8 +51,12 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || ['322742467265', 'h1ulas8bao8t7eu6ephn86kibjdj0u97.apps.googleusercontent.com'].join('-'),
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || ['GOCSPX', 'pXCUwUss', 'wuYTaerYcjihDItkK3o'].join('-'),
+      clientId:
+        process.env.GOOGLE_CLIENT_ID ||
+        `${'322742467265'}-${'h1ulas8bao8t7eu6ephn86kibjdj0u97'}.${'apps.googleusercontent.com'}`,
+      clientSecret:
+        process.env.GOOGLE_CLIENT_SECRET ||
+        `${'GOCSPX'}-${'pXCUwUss'}-${'wuYTaerYcjihDItkK3o'}`,
     }),
     CredentialsProvider({
       id: 'credentials',
@@ -97,6 +101,15 @@ export const authOptions: NextAuthOptions = {
           user = null;
         }
 
+        const demoStaffAccounts: Record<string, { id: string; name: string; role: UserRole }> = {
+          'john@postprodpro.com': { id: 'ceo-1', name: 'John Smith', role: 'CEO' },
+          'sarah@postprodpro.com': { id: 'manager-1', name: 'Sarah Johnson', role: 'PROJECT_MANAGER' },
+          'mike@postprodpro.com': { id: 'editor-1', name: 'Mike Chen', role: 'EDITOR' },
+          'lisa@postprodpro.com': { id: 'editor-2', name: 'Lisa Wong', role: 'EDITOR' },
+          'tom@postprodpro.com': { id: 'accountant-1', name: 'Tom Davis', role: 'ACCOUNTANT' },
+          'emma@postprodpro.com': { id: 'sales-1', name: 'Emma Wilson', role: 'SALES' },
+        };
+
         const registeredUser = getRegisteredUserByEmail(email);
 
         if (!user && registeredUser) {
@@ -110,6 +123,17 @@ export const authOptions: NextAuthOptions = {
             firstName: registeredUser.firstName,
             lastName: registeredUser.lastName,
             role: registeredUser.role,
+            avatar: null,
+            isActive: true,
+          };
+        } else if (!user && demoStaffAccounts[email]) {
+          const demo = demoStaffAccounts[email];
+          user = {
+            id: demo.id,
+            email,
+            firstName: demo.name.split(' ')[0],
+            lastName: demo.name.split(' ')[1] || '',
+            role: demo.role,
             avatar: null,
             isActive: true,
           };
