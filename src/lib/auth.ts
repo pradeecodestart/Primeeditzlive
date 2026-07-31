@@ -19,7 +19,6 @@ export const STAFF_ROLES: UserRole[] = [
   'EDITOR',
   'ACCOUNTANT',
   'SALES',
-  'CLIENT',
 ];
 
 export const CLIENT_ROLES: UserRole[] = ['CLIENT'];
@@ -45,14 +44,10 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
   providers: [
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || 'google-client-id-placeholder',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'google-client-secret-placeholder',
+    }),
     CredentialsProvider({
       id: 'credentials',
       name: 'credentials',
