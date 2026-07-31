@@ -53,15 +53,6 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || ['322742467265', 'h1ulas8bao8t7eu6ephn86kibjdj0u97.apps.googleusercontent.com'].join('-'),
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || ['GOCSPX', 'pXCUwUss', 'wuYTaerYcjihDItkK3o'].join('-'),
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture,
-          role: 'CLIENT',
-        };
-      },
     }),
     CredentialsProvider({
       id: 'credentials',
