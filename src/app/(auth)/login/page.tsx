@@ -110,7 +110,7 @@ export default function ClientLoginPage() {
 
         {/* Google OAuth Login */}
         <Button
-          onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+          onClick={() => signIn('google', { callbackUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : '/dashboard' })}
           variant="outline"
           className="w-full h-11 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white gap-2 text-xs font-semibold"
         >
