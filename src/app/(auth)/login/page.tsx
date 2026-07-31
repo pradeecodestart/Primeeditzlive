@@ -110,7 +110,12 @@ export default function ClientLoginPage() {
 
         {/* Google OAuth Login */}
         <Button
-          onClick={() => signIn('google', { callbackUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : '/dashboard' })}
+          onClick={async () => {
+            const res = await signIn('google', { redirect: false, callbackUrl: '/dashboard' });
+            if (res?.url) {
+              window.location.href = res.url;
+            }
+          }}
           variant="outline"
           className="w-full h-11 border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white gap-2 text-xs font-semibold"
         >
