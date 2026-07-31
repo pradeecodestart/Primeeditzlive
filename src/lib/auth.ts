@@ -80,46 +80,30 @@ export const authOptions: NextAuthOptions = {
           if (user && user.password) {
             const isValidPassword = await bcrypt.compare(credentials.password, user.password);
             if (!isValidPassword) {
-              user = null; // Fallback to memory store/demo accounts if DB match fails
+              throw new Error('Invalid email or password');
             }
           }
-        } catch (dbError) {
+        } catch (dbError: any) {
+          if (dbError.message === 'Invalid email or password') {
+            throw dbError;
+          }
           console.warn('Database connection unavailable during auth:', dbError);
           user = null;
         }
 
-        // Demo Fallback Users
-        const demoUsers: Record<string, { id: string; name: string; role: UserRole }> = {
-          'john@postprodpro.com': { id: 'ceo-1', name: 'John Smith', role: 'CEO' },
-          'sarah@postprodpro.com': { id: 'manager-1', name: 'Sarah Johnson', role: 'PROJECT_MANAGER' },
-          'mike@postprodpro.com': { id: 'editor-1', name: 'Mike Chen', role: 'EDITOR' },
-          'lisa@postprodpro.com': { id: 'editor-2', name: 'Lisa Wong', role: 'EDITOR' },
-          'tom@postprodpro.com': { id: 'accountant-1', name: 'Tom Davis', role: 'ACCOUNTANT' },
-          'emma@postprodpro.com': { id: 'sales-1', name: 'Emma Wilson', role: 'SALES' },
-          'bob@client.com': { id: 'client-1', name: 'Bob Martinez', role: 'CLIENT' },
-          'alice@client.com': { id: 'client-2', name: 'Alice Cooper', role: 'CLIENT' },
-        };
-
         const registeredUser = getRegisteredUserByEmail(email);
 
         if (!user && registeredUser) {
+          const isValidPassword = await bcrypt.compare(credentials.password, registeredUser.password);
+          if (!isValidPassword) {
+            throw new Error('Invalid email or password');
+          }
           user = {
             id: registeredUser.id,
             email: registeredUser.email,
             firstName: registeredUser.firstName,
             lastName: registeredUser.lastName,
             role: registeredUser.role,
-            avatar: null,
-            isActive: true,
-          };
-        } else if (!user && demoUsers[email]) {
-          const demo = demoUsers[email];
-          user = {
-            id: demo.id,
-            email,
-            firstName: demo.name.split(' ')[0],
-            lastName: demo.name.split(' ')[1] || '',
-            role: demo.role,
             avatar: null,
             isActive: true,
           };
