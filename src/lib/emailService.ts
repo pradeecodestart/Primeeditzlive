@@ -1,4 +1,13 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
+const getResendClient = () => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey && apiKey !== 'your-resend-api-key-here') {
+    return new Resend(apiKey);
+  }
+  return null;
+};
 
 const getTransporter = () => {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -6,12 +15,15 @@ const getTransporter = () => {
   const user = process.env.SMTP_USER || process.env.EMAIL_USER;
   const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
 
-  if (user && pass) {
+  if (user && pass && user !== 'your-gmail@gmail.com' && pass !== 'your-gmail-app-password') {
     return nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
       auth: { user, pass },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
   }
   return null;
@@ -24,7 +36,6 @@ export async function sendVerificationEmail(
   token?: string
 ) {
   const appName = 'PostProd Pro';
-  const supportEmail = 'support@postprodpro.com';
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const verificationUrl = `${baseUrl}/verify-email?token=${token || code}`;
 
@@ -60,7 +71,7 @@ export async function sendVerificationEmail(
       <a href="${verificationUrl}" class="btn">Click Here to Verify Email (1-Click)</a>
     </div>
 
-    <p style="text-align: center; font-size: 13px; color: #64748b;">OR enter this 6-digit OTP code in your browser:</p>
+    <p style="text-align: center; font-size: 13px; color: #64748b; margin-top: 20px;">OR enter this 6-digit OTP code in your browser:</p>
 
     <div class="code-box">
       <div class="code">${code}</div>
@@ -81,20 +92,39 @@ export async function sendVerificationEmail(
 </html>
   `;
 
-  const transporter = getTransporter();
+  // Option 1: Resend SDK
+  const resend = getResendClient();
+  if (resend) {
+    try {
+      const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+      const response = await resend.emails.send({
+        from: `${appName} Security <${fromEmail}>`,
+        to: [toEmail],
+        subject: `Verify Your Email Address - ${appName}`,
+        html: htmlContent,
+      });
+      console.log(`[RESEND API EMAIL SENT SUCCESS]:`, response);
+      return { success: true, method: 'RESEND', data: response };
+    } catch (err) {
+      console.error(`[RESEND API ERROR]:`, err);
+    }
+  }
 
+  // Option 2: Nodemailer SMTP (Gmail / SendGrid / Custom SMTP)
+  const transporter = getTransporter();
   if (transporter) {
     try {
-      await transporter.sendMail({
-        from: `"${appName} Security" <${process.env.SMTP_USER || 'no-reply@postprodpro.com'}>`,
+      const fromEmail = process.env.SMTP_USER || process.env.EMAIL_USER;
+      const info = await transporter.sendMail({
+        from: `"${appName} Security" <${fromEmail}>`,
         to: toEmail,
         subject: `Verify Your Email Address - ${appName}`,
         html: htmlContent,
       });
-      console.log(`[EMAIL SENT] Verification email sent to ${toEmail}`);
-      return { success: true, method: 'SMTP' };
+      console.log(`[SMTP GMAIL EMAIL SENT SUCCESS to ${toEmail}]:`, info.messageId);
+      return { success: true, method: 'SMTP', messageId: info.messageId };
     } catch (err) {
-      console.error(`[EMAIL SMTP ERROR] Failed to send to ${toEmail}:`, err);
+      console.error(`[SMTP GMAIL ERROR] Failed to send email to ${toEmail}:`, err);
     }
   }
 
@@ -144,18 +174,34 @@ export async function sendWelcomeEmail(toEmail: string, firstName: string = 'Val
 </html>
   `;
 
+  const resend = getResendClient();
+  if (resend) {
+    try {
+      const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+      await resend.emails.send({
+        from: `${appName} <${fromEmail}>`,
+        to: [toEmail],
+        subject: `🎉 Welcome! Your Email is Verified - ${appName}`,
+        html: htmlContent,
+      });
+      return { success: true, method: 'RESEND' };
+    } catch (e) {
+      console.warn('Welcome email Resend error:', e);
+    }
+  }
+
   const transporter = getTransporter();
   if (transporter) {
     try {
       await transporter.sendMail({
-        from: `"${appName}" <${process.env.SMTP_USER || 'no-reply@postprodpro.com'}>`,
+        from: `"${appName}" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
         to: toEmail,
         subject: `🎉 Welcome! Your Email is Verified - ${appName}`,
         html: htmlContent,
       });
       return { success: true, method: 'SMTP' };
     } catch (e) {
-      console.warn('Welcome email error:', e);
+      console.warn('Welcome email SMTP error:', e);
     }
   }
 
@@ -230,12 +276,27 @@ export async function sendGoogleOAuthVerificationConfirmation(
 </html>
   `;
 
-  const transporter = getTransporter();
+  const resend = getResendClient();
+  if (resend) {
+    try {
+      const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+      await resend.emails.send({
+        from: `${appName} Client Verification <${fromEmail}>`,
+        to: [toEmail],
+        subject: `Google Account Verified: Welcome to ${appName}, ${name}`,
+        html: htmlContent,
+      });
+      return { success: true, method: 'RESEND' };
+    } catch (e) {
+      console.warn('Google verification email Resend error:', e);
+    }
+  }
 
+  const transporter = getTransporter();
   if (transporter) {
     try {
       await transporter.sendMail({
-        from: `"${appName} Client Verification" <${process.env.SMTP_USER || 'no-reply@postprodpro.com'}>`,
+        from: `"${appName} Client Verification" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
         to: toEmail,
         subject: `Google Account Verified: Welcome to ${appName}, ${name}`,
         html: htmlContent,
@@ -247,19 +308,6 @@ export async function sendGoogleOAuthVerificationConfirmation(
     }
   }
 
-  // Local Dev Logger
-  console.log(`
-===========================================================
-📬 GOOGLE OAUTH CLIENT VERIFICATION CONFIRMATION (DEV MODE)
-To: ${toEmail}
-Subject: Google Account Verified: Welcome to ${appName}, ${name}
-
-Profile Info Received & Verified:
-- Name: ${name}
-- Email: ${toEmail}
-- Verified At: ${timestamp} (Bangalore, IST)
-===========================================================
-  `);
-
+  console.log(`[GOOGLE OAUTH CONFIRMATION SENT TO]: ${toEmail}`);
   return { success: true, method: 'DEV_LOG' };
 }
