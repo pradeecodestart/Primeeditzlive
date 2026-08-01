@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 function ClientLoginForm() {
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,10 +16,14 @@ function ClientLoginForm() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (searchParams.get('registered') === 'true') {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && searchParams.get('registered') === 'true') {
       setSuccess('Account created successfully! Please sign in with your credentials.');
     }
-  }, [searchParams]);
+  }, [searchParams, mounted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,9 +51,13 @@ function ClientLoginForm() {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    window.location.href = '/api/auth/google/client';
-  };
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
+        Loading Client Portal...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4">
