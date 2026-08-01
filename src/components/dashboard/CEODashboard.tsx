@@ -10,6 +10,8 @@ import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
+import { CeoQrCodeManager } from '@/components/admin/CeoQrCodeManager';
+
 export const CEODashboard: React.FC = () => {
   return (
     <div className="space-y-8">
@@ -66,6 +68,9 @@ export const CEODashboard: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* CEO Payment QR Code & Bank Account Setup Panel */}
+      <CeoQrCodeManager />
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
