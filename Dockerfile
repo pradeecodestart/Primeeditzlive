@@ -3,7 +3,7 @@ FROM node:20-alpine AS base
 
 # Stage 1: Install dependencies
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -24,6 +24,7 @@ RUN npm run build
 
 # Stage 3: Minimal Production Image Runner
 FROM base AS runner
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 ENV NODE_ENV production
