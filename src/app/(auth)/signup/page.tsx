@@ -51,7 +51,8 @@ export default function ClientSignupPage() {
       });
 
       if (response.data) {
-        router.push('/login?registered=true');
+        const email = encodeURIComponent(formData.email);
+        router.push(`/verify-email?email=${email}`);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');

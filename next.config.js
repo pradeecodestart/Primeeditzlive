@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
   swcMinify: true,
   compress: true,
+  productionBrowserSourceMaps: false,
 
   eslint: {
     ignoreDuringBuilds: true,
@@ -27,12 +29,15 @@ const nextConfig = {
       'framer-motion',
       'date-fns',
     ],
+    esmExternals: true,
   },
 
   // ── Image Optimization ──────────────────────────────────
   images: {
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60 * 60 * 24 * 30,
+    minimumCacheTTL: 60 * 60 * 24 * 365,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: 'https',
@@ -63,6 +68,7 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
         ],
       },
       {
@@ -81,8 +87,13 @@ const nextConfig = {
   },
 
   // ── Webpack Optimizations ───────────────────────────────
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.alias.canvas = false;
+    
+    if (isServer) {
+      config.optimization.minimize = true;
+    }
+    
     return config;
   },
 };

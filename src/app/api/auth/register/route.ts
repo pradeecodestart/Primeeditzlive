@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { saveRegisteredUser, getRegisteredUserByEmail } from '@/lib/registeredUsersStore';
+import { sendVerificationEmail } from '@/lib/emailService';
 
 export async function POST(req: Request) {
   try {
@@ -40,10 +41,12 @@ export async function POST(req: Request) {
         );
       }
     } catch (e) {
-      // Ignore DB error
+      // Ignore DB check error if starting up
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000);
 
     const newUserObj = {
       id: `user_${Math.random().toString(36).substring(2, 9)}`,
@@ -55,12 +58,15 @@ export async function POST(req: Request) {
       portal: targetPortal as any,
       company: company || '',
       phone: phone || '',
+      isEmailVerified: false,
+      verificationCode,
+      verificationExpiry,
     };
 
-    // Save to shared memory store for instant login availability
+    // Save to shared memory store
     saveRegisteredUser(newUserObj);
 
-    // Save to Database if online
+    // Save to Database
     try {
       await prisma.user.create({
         data: {
@@ -73,22 +79,23 @@ export async function POST(req: Request) {
           portal: targetPortal as any,
           company: company || null,
           phone: phone || null,
+          isEmailVerified: false,
+          verificationCode,
+          verificationExpiry,
         } as any,
       });
     } catch (dbErr) {
-      // Ignored if db initializing
+      console.warn('Prisma create user warning:', dbErr);
     }
+
+    // Send Verification Email
+    await sendVerificationEmail(cleanEmail, verificationCode, firstName);
 
     return NextResponse.json({
       success: true,
-      message: 'Account registered successfully.',
-      user: {
-        id: newUserObj.id,
-        email: newUserObj.email,
-        name: `${newUserObj.firstName} ${newUserObj.lastName}`,
-        role: newUserObj.role,
-        portal: newUserObj.portal,
-      },
+      requiresVerification: true,
+      email: cleanEmail,
+      message: 'Account created! Please check your email for your 6-digit verification code.',
     });
   } catch (error: any) {
     return NextResponse.json(
