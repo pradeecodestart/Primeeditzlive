@@ -26,6 +26,17 @@ import {
   Video,
   CheckCircle2,
   ArrowUpRight,
+  UploadCloud,
+  FileText,
+  Receipt,
+  Plus,
+  Minus,
+  Briefcase,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Zap,
 } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
@@ -55,12 +66,6 @@ export const OrderForm: React.FC = () => {
   const [projectScope, setProjectScope] = useState<'PHOTO' | 'VIDEO' | 'BOTH'>('BOTH');
   const [activeTab, setActiveTab] = useState<'PHOTO' | 'DESIGN' | 'VIDEO' | 'SOCIAL' | 'AUDIO_VFX'>('PHOTO');
 
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // CEO QR Code & Bank State
   const [ceoSettings, setCeoSettings] = useState({
     upiId: 'postprodpro@okicici',
@@ -87,7 +92,7 @@ export const OrderForm: React.FC = () => {
     } else if (projectScope === 'VIDEO' && (activeTab === 'PHOTO' || activeTab === 'DESIGN')) {
       setActiveTab('VIDEO');
     }
-  }, [projectScope]);
+  }, [projectScope, activeTab]);
 
   // Client Profile & Project Setup (Page 1)
   const [clientData, setClientData] = useState({
@@ -104,11 +109,11 @@ export const OrderForm: React.FC = () => {
     eventDate: '',
     shootDate: '',
     deliveryDate: '',
-    rushRequired: 'NO', // NO, RUSH (+50%), EXPRESS (+100%)
+    rushRequired: 'NO',
     priority: 'MEDIUM',
   });
 
-  // Auto fill logged in client details without flashing
+  // Auto fill logged in client details seamlessly
   useEffect(() => {
     if (session?.user) {
       setClientData((prev) => ({
@@ -201,9 +206,11 @@ export const OrderForm: React.FC = () => {
   };
 
   // Update Service Quantity
-  const updateQty = (id: string, qty: number) => {
+  const updateQty = (id: string, delta: number) => {
     setServices((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, qty: Math.max(1, qty) } : item))
+      prev.map((item) =>
+        item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
+      )
     );
   };
 
@@ -211,7 +218,7 @@ export const OrderForm: React.FC = () => {
   const filteredServices = services.filter((s) => {
     if (projectScope === 'PHOTO') return s.category === 'PHOTO' || s.category === 'DESIGN';
     if (projectScope === 'VIDEO') return s.category === 'VIDEO' || s.category === 'SOCIAL' || s.category === 'AUDIO_VFX';
-    return true; // BOTH
+    return true;
   });
 
   // Calculate Subtotals & Itemized Invoice Total
@@ -270,14 +277,14 @@ export const OrderForm: React.FC = () => {
   // SUCCESS CONFIRMATION PAGE
   if (isOrderConfirmed) {
     return (
-      <Card className="max-w-2xl mx-auto border-emerald-500/40 bg-slate-900 text-white shadow-2xl text-center p-8 my-8">
+      <Card className="max-w-2xl mx-auto border-emerald-500/40 bg-slate-900 text-white shadow-2xl text-center p-8 my-8 backdrop-blur-xl">
         <div className="space-y-6">
           <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40 shadow-inner">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 animate-bounce" />
           </div>
 
           <div>
-            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold uppercase border border-emerald-500/30">
+            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold uppercase border border-emerald-500/30 tracking-wider">
               Payment Receipt Received & Verified
             </span>
             <h2 className="text-2xl font-extrabold text-white mt-3">
@@ -313,7 +320,7 @@ export const OrderForm: React.FC = () => {
 
           <div className="flex justify-center gap-4 pt-4">
             <Link href="/dashboard">
-              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 px-6">
+              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 px-6 shadow-lg shadow-indigo-600/30">
                 Go to Client Dashboard <ArrowUpRight className="w-4 h-4" />
               </Button>
             </Link>
@@ -330,41 +337,48 @@ export const OrderForm: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      {/* Progress Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 overflow-x-auto">
-        {[
-          { num: 1, label: 'Client & Setup' },
-          { num: 2, label: 'Asset Upload' },
-          { num: 3, label: 'Select Services (INR)' },
-          { num: 4, label: 'Creative Brief' },
-          { num: 5, label: 'Itemized Bill & GST' },
-          { num: 6, label: 'CEO QR & Checkout' },
-        ].map((s) => (
-          <div key={s.num} className="flex items-center space-x-2 shrink-0 pr-4">
-            <div
-              className={`h-8 w-8 rounded-full font-bold flex items-center justify-center text-xs transition-colors ${
+      {/* Visual Multi-Step Header Bar */}
+      <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl backdrop-blur-xl">
+        <div className="flex items-center justify-between overflow-x-auto gap-2">
+          {[
+            { num: 1, label: 'Client & Setup', icon: User },
+            { num: 2, label: 'Asset Upload', icon: UploadCloud },
+            { num: 3, label: 'Select Services', icon: Layers },
+            { num: 4, label: 'Creative Brief', icon: FileText },
+            { num: 5, label: 'GST Tax Invoice', icon: Receipt },
+            { num: 6, label: 'CEO QR Checkout', icon: QrCode },
+          ].map((s) => (
+            <button
+              key={s.num}
+              type="button"
+              onClick={() => setStep(s.num)}
+              className={`flex items-center space-x-2 shrink-0 px-3 py-2 rounded-xl transition-all ${
                 step === s.num
-                  ? 'bg-indigo-600 text-white shadow-lg'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-bold'
                   : step > s.num
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-800 text-slate-400'
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'text-slate-400 hover:bg-slate-800/60'
               }`}
             >
-              {step > s.num ? <Check className="h-4 w-4" /> : s.num}
-            </div>
-            <span
-              className={`text-xs font-semibold ${
-                step === s.num ? 'text-indigo-400 font-bold' : 'text-slate-400'
-              }`}
-            >
-              {s.label}
-            </span>
-          </div>
-        ))}
+              <div
+                className={`h-6 w-6 rounded-lg font-bold flex items-center justify-center text-xs ${
+                  step === s.num
+                    ? 'bg-white text-indigo-600'
+                    : step > s.num
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                {step > s.num ? <Check className="h-3.5 w-3.5" /> : s.num}
+              </div>
+              <span className="text-xs font-semibold whitespace-nowrap">{s.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Card className="border-indigo-500/30 bg-slate-900 text-white shadow-2xl">
-        <CardHeader className="border-b border-slate-800 pb-4">
+      <Card className="border-slate-800 bg-slate-900/90 text-white shadow-2xl backdrop-blur-xl">
+        <CardHeader className="border-b border-slate-800/80 pb-4">
           <CardTitle suppressHydrationWarning className="text-xl font-bold flex items-center justify-between text-indigo-300">
             <span>
               {step === 1 && 'Step 1: Client Profile & Project Setup'}
@@ -375,7 +389,7 @@ export const OrderForm: React.FC = () => {
               {step === 6 && 'Step 6: CEO Official Payment QR Code & Order Confirmation'}
             </span>
 
-            <span className="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+            <span className="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-bold uppercase">
               Scope: {projectScope}
             </span>
           </CardTitle>
@@ -385,8 +399,8 @@ export const OrderForm: React.FC = () => {
           {/* STEP 1: CLIENT & PROJECT SETUP */}
           {step === 1 && (
             <div className="space-y-6">
-              {/* BEAUTIFULLY INTEGRATED PROJECT SCOPE SELECTION IN STEP 1 */}
-              <div className="p-5 rounded-2xl bg-slate-950 border border-indigo-500/30 space-y-4 shadow-lg">
+              {/* BEAUTIFULLY DESIGNED PROJECT SCOPE CARDS */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-indigo-500/30 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-extrabold text-white flex items-center gap-2 uppercase tracking-wider">
@@ -397,7 +411,7 @@ export const OrderForm: React.FC = () => {
                       Choose whether this project is Photo only, Video only, or Photo + Video package.
                     </p>
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-600/20 text-indigo-300 border border-indigo-500/30">
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-indigo-600/20 text-indigo-300 border border-indigo-500/30">
                     Required Selection
                   </span>
                 </div>
@@ -407,14 +421,14 @@ export const OrderForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setProjectScope('PHOTO')}
-                    className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                       projectScope === 'PHOTO'
-                        ? 'border-indigo-500 bg-indigo-950/60 text-white shadow-xl ring-2 ring-indigo-500/50'
+                        ? 'border-indigo-500 bg-indigo-950/70 text-white shadow-xl ring-2 ring-indigo-500/50 scale-[1.02]'
                         : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+                      <div className="p-2.5 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
                         <Camera className="w-5 h-5" />
                       </div>
                       {projectScope === 'PHOTO' && (
@@ -435,14 +449,14 @@ export const OrderForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setProjectScope('VIDEO')}
-                    className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                       projectScope === 'VIDEO'
-                        ? 'border-purple-500 bg-purple-950/60 text-white shadow-xl ring-2 ring-purple-500/50'
+                        ? 'border-purple-500 bg-purple-950/70 text-white shadow-xl ring-2 ring-purple-500/50 scale-[1.02]'
                         : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-purple-600/20 text-purple-400 border border-purple-500/30">
+                      <div className="p-2.5 rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30">
                         <Video className="w-5 h-5" />
                       </div>
                       {projectScope === 'VIDEO' && (
@@ -463,14 +477,14 @@ export const OrderForm: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setProjectScope('BOTH')}
-                    className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                       projectScope === 'BOTH'
-                        ? 'border-emerald-500 bg-emerald-950/60 text-white shadow-xl ring-2 ring-emerald-500/50'
+                        ? 'border-emerald-500 bg-emerald-950/70 text-white shadow-xl ring-2 ring-emerald-500/50 scale-[1.02]'
                         : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <div className="p-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+                      <div className="p-2.5 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
                         <Sparkles className="w-5 h-5 text-amber-300" />
                       </div>
                       {projectScope === 'BOTH' && (
@@ -491,8 +505,8 @@ export const OrderForm: React.FC = () => {
 
               {/* CLIENT DETAILS FORM */}
               <div className="space-y-4 pt-2">
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
-                  2. Client & Studio Details
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                  <User className="w-3.5 h-3.5 text-indigo-400" /> 2. Client & Studio Details
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -517,7 +531,7 @@ export const OrderForm: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                      Company Name
+                      Company / Studio Name
                     </label>
                     <Input
                       value={clientData.companyName}
@@ -580,8 +594,8 @@ export const OrderForm: React.FC = () => {
 
               {/* PROJECT OVERVIEW FORM */}
               <div className="space-y-4 border-t border-slate-800 pt-4">
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
-                  3. Project Timeline & Delivery Priority
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-400" /> 3. Project Timeline & Delivery Priority
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -721,7 +735,7 @@ export const OrderForm: React.FC = () => {
                   ))}
               </div>
 
-              {/* Service Selection List */}
+              {/* Service Selection List Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[420px] overflow-y-auto pr-2">
                 {filteredServices
                   .filter((s) => s.category === activeTab)
@@ -748,15 +762,24 @@ export const OrderForm: React.FC = () => {
                       </div>
 
                       {item.selected && (
-                        <div className="flex items-center space-x-2">
-                          <label className="text-[10px] text-slate-400 uppercase font-semibold">Qty:</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.qty}
-                            onChange={(e) => updateQty(item.id, Number(e.target.value))}
-                            className="w-16 bg-slate-900 border border-indigo-500/50 rounded-lg p-1 text-center font-bold text-white text-xs"
-                          />
+                        <div className="flex items-center space-x-2 bg-slate-900 border border-slate-700 rounded-lg p-1">
+                          <button
+                            type="button"
+                            onClick={() => updateQty(item.id, -1)}
+                            className="p-1 hover:bg-slate-800 rounded text-slate-300"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-8 text-center text-xs font-bold text-white font-mono">
+                            {item.qty}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQty(item.id, 1)}
+                            className="p-1 hover:bg-slate-800 rounded text-slate-300"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -991,7 +1014,7 @@ export const OrderForm: React.FC = () => {
           )}
         </CardContent>
 
-        <CardFooter className="border-t border-slate-800 pt-4 flex justify-between">
+        <CardFooter className="border-t border-slate-800/80 pt-4 flex justify-between">
           <Button
             variant="outline"
             disabled={step === 1}
@@ -1004,7 +1027,7 @@ export const OrderForm: React.FC = () => {
           {step < 6 ? (
             <Button
               onClick={() => setStep((s) => s + 1)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold gap-2"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold gap-2 shadow-lg shadow-indigo-600/30"
             >
               Next Step <ArrowRight className="h-4 w-4" />
             </Button>
