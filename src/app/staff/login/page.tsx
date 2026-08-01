@@ -37,7 +37,7 @@ export default function StaffLoginPage() {
   };
 
   const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/dashboard' });
+    window.location.href = '/api/auth/google/staff';
   };
 
   return (
