@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     const invoiceNumber = `PP-INV-2024-${String(existingOrders.length + 1).padStart(3, '0')}`;
     const orderId = `ord_${Math.random().toString(36).substring(2, 9)}`;
 
-    const clientEmail = body.clientEmail || session?.user?.email || 'client@example.com';
+    const clientEmail = body.clientEmail || body.clientId || session?.user?.email || 'client@example.com';
     const clientName = session?.user?.name || body.clientName || 'Valued Client';
     const firstName = clientName.split(' ')[0] || 'Client';
     const lastName = clientName.split(' ')[1] || '';
