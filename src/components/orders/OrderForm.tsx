@@ -312,59 +312,6 @@ export const OrderForm: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      {/* Top Scope Selector (Photo / Video / Both) */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 border border-indigo-500/30 shadow-xl">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              Select Post-Production Project Scope
-            </h3>
-            <p className="text-xs text-slate-400">
-              Filter options for Photo editing, Video editing, or Photo + Video package.
-            </p>
-          </div>
-
-          <div className="flex p-1 bg-slate-950 rounded-xl border border-slate-800 gap-1 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setProjectScope('PHOTO')}
-              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                projectScope === 'PHOTO'
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" /> Photo Only
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setProjectScope('VIDEO')}
-              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                projectScope === 'VIDEO'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Video className="w-3.5 h-3.5" /> Video Only
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setProjectScope('BOTH')}
-              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                projectScope === 'BOTH'
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Photo + Video Both
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Progress Header */}
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 overflow-x-auto">
         {[
@@ -420,146 +367,264 @@ export const OrderForm: React.FC = () => {
           {/* STEP 1: CLIENT & PROJECT SETUP */}
           {step === 1 && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Client Type
-                  </label>
-                  <Select
-                    value={clientData.clientType}
-                    onChange={(e) => setClientData({ ...clientData, clientType: e.target.value })}
-                    className="bg-slate-950 border-slate-700 text-white"
+              {/* BEAUTIFULLY INTEGRATED PROJECT SCOPE SELECTION IN STEP 1 */}
+              <div className="p-5 rounded-2xl bg-slate-950 border border-indigo-500/30 space-y-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-extrabold text-white flex items-center gap-2 uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      1. Select Post-Production Project Scope
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Choose whether this project is Photo only, Video only, or Photo + Video package.
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-600/20 text-indigo-300 border border-indigo-500/30">
+                    Required Selection
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Photo Only Card */}
+                  <button
+                    type="button"
+                    onClick={() => setProjectScope('PHOTO')}
+                    className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+                      projectScope === 'PHOTO'
+                        ? 'border-indigo-500 bg-indigo-950/60 text-white shadow-xl ring-2 ring-indigo-500/50'
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white'
+                    }`}
                   >
-                    <option value="Professional Photographer">Professional Photographer</option>
-                    <option value="Videographer">Videographer</option>
-                    <option value="Wedding Planner">Wedding Planner</option>
-                    <option value="Event Company">Event Company</option>
-                    <option value="Content Creator">Content Creator</option>
-                    <option value="Corporate">Corporate</option>
-                    <option value="Other">Other</option>
-                  </Select>
-                </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                      {projectScope === 'PHOTO' && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-[10px] font-extrabold text-white shadow-sm">
+                          ✓ SELECTED
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-white">Photo Only</h4>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                        Retouching, Color Grading, Skin Enhancement, Album Layouts & Graphics
+                      </p>
+                    </div>
+                  </button>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Company Name
-                  </label>
-                  <Input
-                    value={clientData.companyName}
-                    onChange={(e) => setClientData({ ...clientData, companyName: e.target.value })}
-                    placeholder="e.g. Unique Visual Studios"
-                    className="bg-slate-950 border-slate-700 text-white"
-                  />
-                </div>
+                  {/* Video Only Card */}
+                  <button
+                    type="button"
+                    onClick={() => setProjectScope('VIDEO')}
+                    className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+                      projectScope === 'VIDEO'
+                        ? 'border-purple-500 bg-purple-950/60 text-white shadow-xl ring-2 ring-purple-500/50'
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2 rounded-lg bg-purple-600/20 text-purple-400 border border-purple-500/30">
+                        <Video className="w-5 h-5" />
+                      </div>
+                      {projectScope === 'VIDEO' && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-purple-600 text-[10px] font-extrabold text-white shadow-sm">
+                          ✓ SELECTED
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-white">Video Only</h4>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                        Cutting, Cinematic Edits, Wedding Teasers, Reels, Shorts & Audio VFX
+                      </p>
+                    </div>
+                  </button>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Contact Person Name
-                  </label>
-                  <Input
-                    value={clientData.contactPerson}
-                    onChange={(e) => setClientData({ ...clientData, contactPerson: e.target.value })}
-                    placeholder="Full Name"
-                    className="bg-slate-950 border-slate-700 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Email Address
-                  </label>
-                  <Input
-                    type="email"
-                    value={clientData.email}
-                    onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
-                    placeholder="you@studio.com"
-                    className="bg-slate-950 border-slate-700 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Phone / WhatsApp Number
-                  </label>
-                  <Input
-                    value={clientData.phone}
-                    onChange={(e) => setClientData({ ...clientData, phone: e.target.value })}
-                    placeholder="+91 98765 43210"
-                    className="bg-slate-950 border-slate-700 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    GST Number (Optional)
-                  </label>
-                  <Input
-                    value={clientData.gstNumber}
-                    onChange={(e) => setClientData({ ...clientData, gstNumber: e.target.value })}
-                    placeholder="29AAAAA0000A1Z5"
-                    className="bg-slate-950 border-slate-700 text-white uppercase"
-                  />
+                  {/* Photo + Video Both Card */}
+                  <button
+                    type="button"
+                    onClick={() => setProjectScope('BOTH')}
+                    className={`p-4 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+                      projectScope === 'BOTH'
+                        ? 'border-emerald-500 bg-emerald-950/60 text-white shadow-xl ring-2 ring-emerald-500/50'
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">
+                        <Sparkles className="w-5 h-5 text-amber-300" />
+                      </div>
+                      {projectScope === 'BOTH' && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-[10px] font-extrabold text-white shadow-sm">
+                          ✓ SELECTED
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-white">Photo + Video Both</h4>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                        Full Studio Combined Package (Photo + Video + Reels + VFX + Albums)
+                      </p>
+                    </div>
+                  </button>
                 </div>
               </div>
 
-              <div className="border-t border-slate-800 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Project Name
-                  </label>
-                  <Input
-                    value={clientData.projectName}
-                    onChange={(e) => setClientData({ ...clientData, projectName: e.target.value })}
-                    placeholder="e.g. Sharma Wedding 2024 / Product Shoot"
-                    className="bg-slate-950 border-slate-700 text-white font-bold"
-                  />
-                </div>
+              {/* CLIENT DETAILS FORM */}
+              <div className="space-y-4 pt-2">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
+                  2. Client & Studio Details
+                </h4>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Project Category
-                  </label>
-                  <Select
-                    value={clientData.projectType}
-                    onChange={(e) => setClientData({ ...clientData, projectType: e.target.value })}
-                    className="bg-slate-950 border-slate-700 text-white"
-                  >
-                    <option value="Wedding">Wedding</option>
-                    <option value="Pre-Wedding">Pre-Wedding</option>
-                    <option value="Engagement">Engagement</option>
-                    <option value="Fashion">Fashion</option>
-                    <option value="Product">Product</option>
-                    <option value="Real Estate">Real Estate</option>
-                    <option value="Corporate Event">Corporate Event</option>
-                    <option value="Music Video">Music Video</option>
-                  </Select>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Client Type
+                    </label>
+                    <Select
+                      value={clientData.clientType}
+                      onChange={(e) => setClientData({ ...clientData, clientType: e.target.value })}
+                      className="bg-slate-950 border-slate-700 text-white"
+                    >
+                      <option value="Professional Photographer">Professional Photographer</option>
+                      <option value="Videographer">Videographer</option>
+                      <option value="Wedding Planner">Wedding Planner</option>
+                      <option value="Event Company">Event Company</option>
+                      <option value="Content Creator">Content Creator</option>
+                      <option value="Corporate">Corporate</option>
+                      <option value="Other">Other</option>
+                    </Select>
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Desired Delivery Date
-                  </label>
-                  <Input
-                    type="date"
-                    value={clientData.deliveryDate}
-                    onChange={(e) => setClientData({ ...clientData, deliveryDate: e.target.value })}
-                    className="bg-slate-950 border-slate-700 text-white"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Company Name
+                    </label>
+                    <Input
+                      value={clientData.companyName}
+                      onChange={(e) => setClientData({ ...clientData, companyName: e.target.value })}
+                      placeholder="e.g. Unique Visual Studios"
+                      className="bg-slate-950 border-slate-700 text-white"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Rush Level Delivery
-                  </label>
-                  <Select
-                    value={clientData.rushRequired}
-                    onChange={(e) => setClientData({ ...clientData, rushRequired: e.target.value })}
-                    className="bg-slate-950 border-slate-700 text-white font-semibold"
-                  >
-                    <option value="NO">Standard Delivery (Normal Rate)</option>
-                    <option value="RUSH">Rush Delivery (+50% Cost, 40% Faster)</option>
-                    <option value="EXPRESS">Express Rush (+100% Cost, 60% Faster)</option>
-                  </Select>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Contact Person Name
+                    </label>
+                    <Input
+                      value={clientData.contactPerson}
+                      onChange={(e) => setClientData({ ...clientData, contactPerson: e.target.value })}
+                      placeholder="Full Name"
+                      className="bg-slate-950 border-slate-700 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Email Address
+                    </label>
+                    <Input
+                      type="email"
+                      value={clientData.email}
+                      onChange={(e) => setClientData({ ...clientData, email: e.target.value })}
+                      placeholder="you@studio.com"
+                      className="bg-slate-950 border-slate-700 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Phone / WhatsApp Number
+                    </label>
+                    <Input
+                      value={clientData.phone}
+                      onChange={(e) => setClientData({ ...clientData, phone: e.target.value })}
+                      placeholder="+91 98765 43210"
+                      className="bg-slate-950 border-slate-700 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      GST Number (Optional)
+                    </label>
+                    <Input
+                      value={clientData.gstNumber}
+                      onChange={(e) => setClientData({ ...clientData, gstNumber: e.target.value })}
+                      placeholder="29AAAAA0000A1Z5"
+                      className="bg-slate-950 border-slate-700 text-white uppercase"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* PROJECT OVERVIEW FORM */}
+              <div className="space-y-4 border-t border-slate-800 pt-4">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">
+                  3. Project Timeline & Delivery Priority
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Project Name
+                    </label>
+                    <Input
+                      value={clientData.projectName}
+                      onChange={(e) => setClientData({ ...clientData, projectName: e.target.value })}
+                      placeholder="e.g. Sharma Wedding 2024 / Product Shoot"
+                      className="bg-slate-950 border-slate-700 text-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Project Category
+                    </label>
+                    <Select
+                      value={clientData.projectType}
+                      onChange={(e) => setClientData({ ...clientData, projectType: e.target.value })}
+                      className="bg-slate-950 border-slate-700 text-white"
+                    >
+                      <option value="Wedding">Wedding</option>
+                      <option value="Pre-Wedding">Pre-Wedding</option>
+                      <option value="Engagement">Engagement</option>
+                      <option value="Fashion">Fashion</option>
+                      <option value="Product">Product</option>
+                      <option value="Real Estate">Real Estate</option>
+                      <option value="Corporate Event">Corporate Event</option>
+                      <option value="Music Video">Music Video</option>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Desired Delivery Date
+                    </label>
+                    <Input
+                      type="date"
+                      value={clientData.deliveryDate}
+                      onChange={(e) => setClientData({ ...clientData, deliveryDate: e.target.value })}
+                      className="bg-slate-950 border-slate-700 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Rush Level Delivery
+                    </label>
+                    <Select
+                      value={clientData.rushRequired}
+                      onChange={(e) => setClientData({ ...clientData, rushRequired: e.target.value })}
+                      className="bg-slate-950 border-slate-700 text-white font-semibold"
+                    >
+                      <option value="NO">Standard Delivery (Normal Rate)</option>
+                      <option value="RUSH">Rush Delivery (+50% Cost, 40% Faster)</option>
+                      <option value="EXPRESS">Express Rush (+100% Cost, 60% Faster)</option>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </div>
