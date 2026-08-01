@@ -30,3 +30,15 @@ export function getRegisteredUserByEmail(email: string): RegisteredUser | undefi
   if (!globalRef.__registeredUsersStore) return undefined;
   return globalRef.__registeredUsersStore.get(email.toLowerCase());
 }
+
+export function clearClientUsersFromStore(): number {
+  if (!globalRef.__registeredUsersStore) return 0;
+  let count = 0;
+  for (const [email, user] of globalRef.__registeredUsersStore.entries()) {
+    if (user.portal === 'CLIENT' || user.role === 'CLIENT') {
+      globalRef.__registeredUsersStore.delete(email);
+      count++;
+    }
+  }
+  return count;
+}
