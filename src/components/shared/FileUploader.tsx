@@ -7,14 +7,13 @@ import {
   X,
   CheckCircle2,
   Folder,
-  Pause,
-  Play,
-  RotateCcw,
   Loader2,
   AlertCircle,
   FileVideo,
   FileImage,
   FileText,
+  Play,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
@@ -26,7 +25,7 @@ interface FileUploaderProps {
 }
 
 export interface UploadQueueItem {
-  id: string; // session id on server
+  id: string;
   file: File;
   name: string;
   size: number;
@@ -38,6 +37,54 @@ export interface UploadQueueItem {
 }
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunk size
+
+// Recursive helper to traverse dropped or selected folder entry tree
+async function scanEntryTree(entry: any, currentPath = ''): Promise<{ file: File; relativePath: string }[]> {
+  const result: { file: File; relativePath: string }[] = [];
+  if (!entry) return result;
+
+  if (entry.isFile) {
+    return new Promise((resolve) => {
+      entry.file(
+        (file: File) => {
+          resolve([{ file, relativePath: currentPath ? `${currentPath}/${file.name}` : file.name }]);
+        },
+        (err: any) => {
+          console.error('Error reading file entry:', err);
+          resolve([]);
+        }
+      );
+    });
+  } else if (entry.isDirectory) {
+    const dirReader = entry.createReader();
+    const folderPath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
+
+    const readAllEntries = (): Promise<any[]> => {
+      return new Promise((resolve) => {
+        const entries: any[] = [];
+        const readBatch = () => {
+          dirReader.readEntries((batch: any[]) => {
+            if (!batch || batch.length === 0) {
+              resolve(entries);
+            } else {
+              entries.push(...batch);
+              readBatch();
+            }
+          }, () => resolve(entries));
+        };
+        readBatch();
+      });
+    };
+
+    const entries = await readAllEntries();
+    for (const childEntry of entries) {
+      const childFiles = await scanEntryTree(childEntry, folderPath);
+      result.push(...childFiles);
+    }
+  }
+
+  return result;
+}
 
 export const FileUploader: React.FC<FileUploaderProps> = ({
   onFilesSelected,
@@ -51,7 +98,6 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
-  // Helper to format bytes
   const formatSize = (bytes: number) => {
     if (!bytes || bytes === 0) return '0 B';
     const k = 1024;
@@ -60,40 +106,36 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Add files to upload queue and trigger automatic chunked uploading
-  const addFilesToQueue = async (fileList: Array<{ file: File; relativePath?: string }>) => {
+  // Add files to queue and automatically start upload
+  const processItems = async (fileList: Array<{ file: File; relativePath?: string }>) => {
     const newItems: UploadQueueItem[] = fileList.map((item) => ({
-      id: `temp_${Math.random().toString(36).substring(2, 9)}`,
+      id: `q_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`,
       file: item.file,
       name: item.file.name,
       size: item.file.size,
-      relativePath: item.relativePath || item.file.name,
+      relativePath: item.relativePath || (item.file as any).webkitRelativePath || item.file.name,
       status: 'QUEUED',
       progress: 0,
       uploadedBytes: 0,
     }));
 
     setQueue((prev) => [...prev, ...newItems]);
-
-    // Automatically start uploading queue
-    startUploads([...queue, ...newItems]);
+    uploadBatch(newItems);
   };
 
-  // Process chunked uploads
-  const startUploads = async (items: UploadQueueItem[]) => {
+  // Upload batch of files using chunking
+  const uploadBatch = async (items: UploadQueueItem[]) => {
     setIsUploading(true);
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.status === 'COMPLETED') continue;
 
       try {
-        // Update status to UPLOADING
         setQueue((prev) =>
-          prev.map((q) => (q.name === item.name ? { ...q, status: 'UPLOADING' } : q))
+          prev.map((q) => (q.id === item.id ? { ...q, status: 'UPLOADING' } : q))
         );
 
-        // 1. Initialize upload session on server
+        // 1. Initialize upload session
         const initRes = await axios.post('/api/files/upload', {
           fileName: item.name,
           fileSize: item.size,
@@ -105,7 +147,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         const totalChunks = Math.ceil(item.size / CHUNK_SIZE);
         let uploadedBytes = 0;
 
-        // 2. Upload file in 5MB binary chunks
+        // 2. Upload chunks
         for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
           const start = chunkIndex * CHUNK_SIZE;
           const end = Math.min(item.size, start + CHUNK_SIZE);
@@ -124,19 +166,19 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
           setQueue((prev) =>
             prev.map((q) =>
-              q.name === item.name
-                ? { ...q, id: uploadId, progress: percent, uploadedBytes }
+              q.id === item.id
+                ? { ...q, progress: percent, uploadedBytes }
                 : q
             )
           );
         }
 
-        // 3. Finalize upload
+        // 3. Complete session
         await axios.post(`/api/files/complete/${uploadId}`);
 
         setQueue((prev) =>
           prev.map((q) =>
-            q.name === item.name
+            q.id === item.id
               ? { ...q, status: 'COMPLETED', progress: 100 }
               : q
           )
@@ -145,7 +187,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         console.error(`Upload error for ${item.name}:`, err);
         setQueue((prev) =>
           prev.map((q) =>
-            q.name === item.name
+            q.id === item.id
               ? { ...q, status: 'FAILED', error: err.message || 'Upload failed' }
               : q
           )
@@ -160,79 +202,51 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     }
   };
 
-  // HTML5 DataTransferItem directory scanner
+  // Drop Handler with full directory tree scanning
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
 
     const items = e.dataTransfer.items;
-    const collectedFiles: Array<{ file: File; relativePath?: string }> = [];
+    const collectedFiles: Array<{ file: File; relativePath: string }> = [];
 
-    if (items) {
+    if (items && items.length > 0) {
+      const promises: Promise<{ file: File; relativePath: string }[]>[] = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if (item.kind === 'file') {
-          const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
-          if (entry) {
-            await scanEntry(entry, '', collectedFiles);
-          } else {
-            const file = item.getAsFile();
-            if (file) collectedFiles.push({ file });
-          }
+        if (item.webkitGetAsEntry) {
+          const entry = item.webkitGetAsEntry();
+          if (entry) promises.push(scanEntryTree(entry));
+        } else if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) collectedFiles.push({ file, relativePath: file.name });
         }
       }
-    } else {
-      const files = Array.from(e.dataTransfer.files);
-      files.forEach((file) => collectedFiles.push({ file }));
+      const results = await Promise.all(promises);
+      results.forEach((res) => collectedFiles.push(...res));
+    } else if (e.dataTransfer.files) {
+      Array.from(e.dataTransfer.files).forEach((file: any) => {
+        collectedFiles.push({
+          file,
+          relativePath: file.webkitRelativePath || file.name,
+        });
+      });
     }
 
     if (collectedFiles.length > 0) {
-      addFilesToQueue(collectedFiles);
+      processItems(collectedFiles);
     }
   };
 
-  const scanEntry = async (
-    entry: any,
-    currentPath: string,
-    result: Array<{ file: File; relativePath?: string }>
-  ) => {
-    if (entry.isFile) {
-      return new Promise<void>((resolve) => {
-        entry.file((file: File) => {
-          result.push({
-            file,
-            relativePath: currentPath ? `${currentPath}/${file.name}` : file.name,
-          });
-          resolve();
-        });
-      });
-    } else if (entry.isDirectory) {
-      const dirReader = entry.createReader();
-      const readAllEntries = async (): Promise<any[]> => {
-        let entries: any[] = [];
-        let read = await new Promise<any[]>((res) => dirReader.readEntries(res));
-        while (read.length > 0) {
-          entries = entries.concat(read);
-          read = await new Promise<any[]>((res) => dirReader.readEntries(res));
-        }
-        return entries;
-      };
-
-      const entries = await readAllEntries();
-      for (const childEntry of entries) {
-        await scanEntry(
-          childEntry,
-          currentPath ? `${currentPath}/${entry.name}` : entry.name,
-          result
-        );
-      }
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selected = Array.from(e.target.files).map((file) => ({ file }));
-      addFilesToQueue(selected);
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selected = Array.from(e.target.files).map((file: any) => ({
+        file,
+        relativePath: file.webkitRelativePath || file.name,
+      }));
+      e.target.value = '';
+      processItems(selected);
     }
   };
 
@@ -242,13 +256,13 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Hidden File Inputs */}
+      {/* Hidden File & Folder Inputs */}
       <input
         ref={fileInputRef}
         type="file"
         multiple={multiple}
         accept={acceptedTypes}
-        onChange={handleFileChange}
+        onChange={handleFileInputChange}
         className="hidden"
       />
       <input
@@ -257,7 +271,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         // @ts-ignore
         webkitdirectory="true"
         directory="true"
-        onChange={handleFileChange}
+        multiple
+        onChange={handleFileInputChange}
         className="hidden"
       />
 
@@ -265,9 +280,14 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       <div
         onDragOver={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           setIsDragOver(true);
         }}
-        onDragLeave={() => setIsDragOver(false)}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsDragOver(false);
+        }}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300 relative ${
@@ -290,7 +310,10 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         <div className="flex flex-wrap items-center justify-center gap-3 mt-4" onClick={(e) => e.stopPropagation()}>
           <Button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs gap-1.5 shadow-md px-4 py-2"
           >
             <UploadCloud className="w-4 h-4" /> Select 1000+ Files
@@ -298,7 +321,10 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
           <Button
             type="button"
-            onClick={() => folderInputRef.current?.click()}
+            onClick={(e) => {
+              e.stopPropagation();
+              folderInputRef.current?.click();
+            }}
             className="bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 font-bold text-xs gap-1.5 px-4 py-2"
           >
             <Folder className="w-4 h-4 text-indigo-400" /> Select Entire Folder
