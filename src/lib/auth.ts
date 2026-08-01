@@ -5,10 +5,8 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { getRegisteredUserByEmail } from './registeredUsersStore';
 
-if (process.env.VERCEL_URL) {
-  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-} else if (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes('localhost')) {
-  process.env.NEXTAUTH_URL = 'https://primeeditzlive.vercel.app';
+if (!process.env.NEXTAUTH_URL) {
+  process.env.NEXTAUTH_URL = 'http://localhost:3000';
 }
 
 export type UserRole =
