@@ -53,6 +53,12 @@ export const OrderForm: React.FC = () => {
   const [projectScope, setProjectScope] = useState<'PHOTO' | 'VIDEO' | 'BOTH'>('BOTH');
   const [activeTab, setActiveTab] = useState<'PHOTO' | 'DESIGN' | 'VIDEO' | 'SOCIAL' | 'AUDIO_VFX'>('PHOTO');
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // CEO QR Code & Bank State
   const [ceoSettings, setCeoSettings] = useState({
     upiId: 'postprodpro@okicici',
@@ -247,6 +253,14 @@ export const OrderForm: React.FC = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
   };
+
+  if (!mounted) {
+    return (
+      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-center animate-pulse">
+        Initializing Order Booking System...
+      </div>
+    );
+  }
 
   // SUCCESS CONFIRMATION PAGE
   if (isOrderConfirmed) {
