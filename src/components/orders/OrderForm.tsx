@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 // Service Master Catalog with exact INR Pricing
 interface ServiceItem {
@@ -43,6 +44,7 @@ interface ServiceItem {
 
 export const OrderForm: React.FC = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -105,6 +107,17 @@ export const OrderForm: React.FC = () => {
     rushRequired: 'NO', // NO, RUSH (+50%), EXPRESS (+100%)
     priority: 'MEDIUM',
   });
+
+  // Auto fill logged in client details without flashing
+  useEffect(() => {
+    if (session?.user) {
+      setClientData((prev) => ({
+        ...prev,
+        contactPerson: prev.contactPerson || session.user?.name || '',
+        email: prev.email || session.user?.email || '',
+      }));
+    }
+  }, [session]);
 
   // Transfer & File State (Page 2)
   const [transferData, setTransferData] = useState({
