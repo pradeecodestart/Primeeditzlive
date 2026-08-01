@@ -24,7 +24,6 @@ import {
   Building2,
   CheckCircle,
   Video,
-  Image as ImageIcon,
   CheckCircle2,
   ArrowUpRight,
 } from 'lucide-react';
@@ -397,7 +396,7 @@ export const OrderForm: React.FC = () => {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="p-2 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
-                        <ImageIcon className="w-5 h-5" />
+                        <Camera className="w-5 h-5" />
                       </div>
                       {projectScope === 'PHOTO' && (
                         <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-[10px] font-extrabold text-white shadow-sm">
