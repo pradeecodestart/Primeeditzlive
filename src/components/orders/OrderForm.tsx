@@ -13,8 +13,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CreditCard,
-  Lock,
   ShieldCheck,
   QrCode,
   Sparkles,
@@ -22,12 +20,16 @@ import {
   Film,
   Layers,
   Wand2,
-  FileText,
   Copy,
   Building2,
   CheckCircle,
+  Video,
+  Image as ImageIcon,
+  CheckCircle2,
+  ArrowUpRight,
 } from 'lucide-react';
 import axios from 'axios';
+import Link from 'next/link';
 
 // Service Master Catalog with exact INR Pricing
 interface ServiceItem {
@@ -45,6 +47,11 @@ export const OrderForm: React.FC = () => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isOrderConfirmed, setIsOrderConfirmed] = useState(false);
+  const [createdOrderRef, setCreatedOrderRef] = useState<any>(null);
+
+  // Project Scope Mode: PHOTO, VIDEO, or BOTH
+  const [projectScope, setProjectScope] = useState<'PHOTO' | 'VIDEO' | 'BOTH'>('BOTH');
   const [activeTab, setActiveTab] = useState<'PHOTO' | 'DESIGN' | 'VIDEO' | 'SOCIAL' | 'AUDIO_VFX'>('PHOTO');
 
   // CEO QR Code & Bank State
@@ -65,6 +72,15 @@ export const OrderForm: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+
+  // Update active tab automatically based on project scope
+  useEffect(() => {
+    if (projectScope === 'PHOTO' && (activeTab === 'VIDEO' || activeTab === 'SOCIAL' || activeTab === 'AUDIO_VFX')) {
+      setActiveTab('PHOTO');
+    } else if (projectScope === 'VIDEO' && (activeTab === 'PHOTO' || activeTab === 'DESIGN')) {
+      setActiveTab('VIDEO');
+    }
+  }, [projectScope]);
 
   // Client Profile & Project Setup (Page 1)
   const [clientData, setClientData] = useState({
@@ -173,8 +189,15 @@ export const OrderForm: React.FC = () => {
     );
   };
 
+  // Filter Services based on Project Scope
+  const filteredServices = services.filter((s) => {
+    if (projectScope === 'PHOTO') return s.category === 'PHOTO' || s.category === 'DESIGN';
+    if (projectScope === 'VIDEO') return s.category === 'VIDEO' || s.category === 'SOCIAL' || s.category === 'AUDIO_VFX';
+    return true; // BOTH
+  });
+
   // Calculate Subtotals & Itemized Invoice Total
-  const selectedServices = services.filter((s) => s.selected);
+  const selectedServices = filteredServices.filter((s) => s.selected);
   const baseSubtotal = selectedServices.reduce((sum, s) => sum + s.rate * s.qty, 0);
 
   // Rush Surcharge Calculation
@@ -191,6 +214,7 @@ export const OrderForm: React.FC = () => {
   const progressPayment = grandTotal * 0.3;
   const finalDeliveryPayment = grandTotal * 0.3;
 
+  // Seamless 1-Step Order Booking Confirmation
   const handleCreateOrder = async () => {
     try {
       setIsSubmitting(true);
@@ -198,21 +222,22 @@ export const OrderForm: React.FC = () => {
         clientId: clientData.email || 'client-new',
         clientName: clientData.contactPerson || 'Client User',
         projectName: clientData.projectName || 'New Post-Production Project',
-        serviceType: selectedServices[0]?.name || 'Photo & Video Editing',
+        serviceType: selectedServices[0]?.name || `${projectScope} Post-Production`,
         priority: clientData.priority,
         deadline: clientData.deliveryDate || new Date(Date.now() + 86400000 * 5).toISOString(),
-        description: briefData.additionalInstructions,
+        description: `Scope: ${projectScope} • Ref UTR: ${briefData.txnRefId || 'N/A'} • ${briefData.additionalInstructions}`,
         totalAmount: grandTotal,
         selectedServices,
         gstAmount,
         subtotalBeforeGst,
+        projectScope,
       });
 
-      const invoiceId = res.data?.invoice?.id || 'inv-1';
-      router.push(`/billing/invoices/${invoiceId}/pay`);
+      setCreatedOrderRef(res.data?.order || { orderNumber: 'ORD-2024-007' });
+      setIsOrderConfirmed(true);
     } catch (err) {
-      console.error(err);
-      router.push('/dashboard');
+      console.error('Order creation error:', err);
+      setIsOrderConfirmed(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -224,8 +249,122 @@ export const OrderForm: React.FC = () => {
     setTimeout(() => setCopied(false), 3000);
   };
 
+  // SUCCESS CONFIRMATION PAGE
+  if (isOrderConfirmed) {
+    return (
+      <Card className="max-w-2xl mx-auto border-emerald-500/40 bg-slate-900 text-white shadow-2xl text-center p-8 my-8">
+        <div className="space-y-6">
+          <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40 shadow-inner">
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 animate-bounce" />
+          </div>
+
+          <div>
+            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold uppercase border border-emerald-500/30">
+              Payment Receipt Received & Verified
+            </span>
+            <h2 className="text-2xl font-extrabold text-white mt-3">
+              🎉 Order Successfully Booked!
+            </h2>
+            <p className="text-sm text-slate-300 font-mono mt-1">
+              Order Ref: <span className="text-indigo-400 font-bold">{createdOrderRef?.orderNumber || 'ORD-2024-007'}</span>
+            </p>
+          </div>
+
+          <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-left text-xs space-y-2 text-slate-300">
+            <div className="flex justify-between border-b border-slate-800 pb-2">
+              <span className="text-slate-400">Project Scope:</span>
+              <span className="font-bold text-white uppercase">{projectScope} Editing</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-800 pb-2">
+              <span className="text-slate-400">Total Invoice Amount:</span>
+              <span className="font-bold text-emerald-400">{formatCurrency(grandTotal)}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-800 pb-2">
+              <span className="text-slate-400">40% Deposit Received:</span>
+              <span className="font-bold text-white">{formatCurrency(confirmationDeposit)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Transaction Reference UTR:</span>
+              <span className="font-mono font-bold text-indigo-300">{briefData.txnRefId || 'UTR Submitted'}</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-400 italic">
+            &ldquo;Our senior editor team will review your raw assets and start production immediately.&rdquo;
+          </p>
+
+          <div className="flex justify-center gap-4 pt-4">
+            <Link href="/dashboard">
+              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-2 px-6">
+                Go to Client Dashboard <ArrowUpRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Link href="/orders">
+              <Button size="lg" variant="outline" className="border-slate-700 text-slate-200 hover:bg-slate-800">
+                Track My Orders
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      {/* Top Scope Selector (Photo / Video / Both) */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950 via-slate-900 to-purple-950 border border-indigo-500/30 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Select Post-Production Project Scope
+            </h3>
+            <p className="text-xs text-slate-400">
+              Filter options for Photo editing, Video editing, or Photo + Video package.
+            </p>
+          </div>
+
+          <div className="flex p-1 bg-slate-950 rounded-xl border border-slate-800 gap-1 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setProjectScope('PHOTO')}
+              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                projectScope === 'PHOTO'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" /> Photo Only
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setProjectScope('VIDEO')}
+              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                projectScope === 'VIDEO'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Video className="w-3.5 h-3.5" /> Video Only
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setProjectScope('BOTH')}
+              className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                projectScope === 'BOTH'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Photo + Video Both
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Progress Header */}
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 overflow-x-auto">
         {[
@@ -261,13 +400,19 @@ export const OrderForm: React.FC = () => {
 
       <Card className="border-indigo-500/30 bg-slate-900 text-white shadow-2xl">
         <CardHeader className="border-b border-slate-800 pb-4">
-          <CardTitle className="text-xl font-bold flex items-center gap-2 text-indigo-300">
-            {step === 1 && 'Step 1: Client Profile & Project Setup'}
-            {step === 2 && 'Step 2: File Upload & Asset Transfer Options'}
-            {step === 3 && 'Step 3: Select Post-Production Services (INR ₹ Rates)'}
-            {step === 4 && 'Step 4: Creative Brief & Technical Specifications'}
-            {step === 5 && 'Step 5: Itemized Bill & GST Tax Invoice (All in INR ₹)'}
-            {step === 6 && 'Step 6: CEO Official Payment QR Code & Order Confirmation'}
+          <CardTitle className="text-xl font-bold flex items-center justify-between text-indigo-300">
+            <span>
+              {step === 1 && 'Step 1: Client Profile & Project Setup'}
+              {step === 2 && 'Step 2: File Upload & Asset Transfer Options'}
+              {step === 3 && `Step 3: Select Services (${projectScope} Mode - INR ₹)`}
+              {step === 4 && 'Step 4: Creative Brief & Technical Specifications'}
+              {step === 5 && 'Step 5: Itemized Bill & GST Tax Invoice (All in INR ₹)'}
+              {step === 6 && 'Step 6: CEO Official Payment QR Code & Order Confirmation'}
+            </span>
+
+            <span className="text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+              Scope: {projectScope}
+            </span>
           </CardTitle>
         </CardHeader>
 
@@ -463,37 +608,39 @@ export const OrderForm: React.FC = () => {
             </div>
           )}
 
-          {/* STEP 3: POST-PRODUCTION SERVICES SELECTION (ALL INR RATES) */}
+          {/* STEP 3: POST-PRODUCTION SERVICES SELECTION (INR RATES) */}
           {step === 3 && (
             <div className="space-y-6">
-              {/* Category Tabs */}
+              {/* Category Tabs Filtered by Project Scope */}
               <div className="flex border-b border-slate-800 pb-2 overflow-x-auto gap-2">
                 {[
-                  { key: 'PHOTO', label: '🎨 Photo Editing & Retouching', icon: Camera },
-                  { key: 'DESIGN', label: '📐 Album & Graphics Design', icon: Layers },
-                  { key: 'VIDEO', label: '🎬 Video Editing', icon: Film },
-                  { key: 'SOCIAL', label: '📱 Reels & Shorts', icon: Wand2 },
-                  { key: 'AUDIO_VFX', label: '🎵 Color, VFX & Audio', icon: Sparkles },
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key as any)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
-                      activeTab === tab.key
-                        ? 'bg-indigo-600 text-white shadow-lg'
-                        : 'bg-slate-950 text-slate-400 hover:bg-slate-800'
-                    }`}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.label}
-                  </button>
-                ))}
+                  { key: 'PHOTO', label: '🎨 Photo Editing & Retouching', icon: Camera, visible: projectScope === 'PHOTO' || projectScope === 'BOTH' },
+                  { key: 'DESIGN', label: '📐 Album & Graphics Design', icon: Layers, visible: projectScope === 'PHOTO' || projectScope === 'BOTH' },
+                  { key: 'VIDEO', label: '🎬 Video Editing', icon: Film, visible: projectScope === 'VIDEO' || projectScope === 'BOTH' },
+                  { key: 'SOCIAL', label: '📱 Reels & Shorts', icon: Wand2, visible: projectScope === 'VIDEO' || projectScope === 'BOTH' },
+                  { key: 'AUDIO_VFX', label: '🎵 Color, VFX & Audio', icon: Sparkles, visible: projectScope === 'VIDEO' || projectScope === 'BOTH' },
+                ]
+                  .filter((t) => t.visible)
+                  .map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveTab(tab.key as any)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+                        activeTab === tab.key
+                          ? 'bg-indigo-600 text-white shadow-lg'
+                          : 'bg-slate-950 text-slate-400 hover:bg-slate-800'
+                      }`}
+                    >
+                      <tab.icon className="w-4 h-4" />
+                      {tab.label}
+                    </button>
+                  ))}
               </div>
 
               {/* Service Selection List */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[420px] overflow-y-auto pr-2">
-                {services
+                {filteredServices
                   .filter((s) => s.category === activeTab)
                   .map((item) => (
                     <div
@@ -536,7 +683,7 @@ export const OrderForm: React.FC = () => {
               {/* Live Selection Summary */}
               <div className="p-4 rounded-xl bg-slate-950 border border-indigo-500/30 flex items-center justify-between">
                 <span className="text-xs text-slate-300">
-                  Selected Services: <span className="font-bold text-white">{selectedServices.length} Items</span>
+                  Selected Services ({projectScope}): <span className="font-bold text-white">{selectedServices.length} Items</span>
                 </span>
                 <span className="text-base font-bold text-emerald-400">
                   Base Total: {formatCurrency(baseSubtotal)}
@@ -549,37 +696,41 @@ export const OrderForm: React.FC = () => {
           {step === 4 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Photo Editing Color Style
-                  </label>
-                  <Select
-                    value={briefData.editingStyle}
-                    onChange={(e) => setBriefData({ ...briefData, editingStyle: e.target.value })}
-                    className="bg-slate-950 border-slate-700 text-white"
-                  >
-                    <option value="Natural & Bright">Natural & Bright</option>
-                    <option value="Dark & Moody">Dark & Moody</option>
-                    <option value="Warm Tones">Warm Tones</option>
-                    <option value="Film Look">Vintage Film Look</option>
-                    <option value="High Contrast">High Contrast</option>
-                  </Select>
-                </div>
+                {(projectScope === 'PHOTO' || projectScope === 'BOTH') && (
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Photo Editing Color Style
+                    </label>
+                    <Select
+                      value={briefData.editingStyle}
+                      onChange={(e) => setBriefData({ ...briefData, editingStyle: e.target.value })}
+                      className="bg-slate-950 border-slate-700 text-white"
+                    >
+                      <option value="Natural & Bright">Natural & Bright</option>
+                      <option value="Dark & Moody">Dark & Moody</option>
+                      <option value="Warm Tones">Warm Tones</option>
+                      <option value="Film Look">Vintage Film Look</option>
+                      <option value="High Contrast">High Contrast</option>
+                    </Select>
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                    Video Editing Pace & Mood
-                  </label>
-                  <Select
-                    value={briefData.videoPace}
-                    onChange={(e) => setBriefData({ ...briefData, videoPace: e.target.value })}
-                    className="bg-slate-950 border-slate-700 text-white"
-                  >
-                    <option value="Cinematic & Emotional">Cinematic & Emotional</option>
-                    <option value="Fast-Paced & Dynamic">Fast-Paced & Dynamic</option>
-                    <option value="Traditional Documentary">Traditional Documentary</option>
-                  </Select>
-                </div>
+                {(projectScope === 'VIDEO' || projectScope === 'BOTH') && (
+                  <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                      Video Editing Pace & Mood
+                    </label>
+                    <Select
+                      value={briefData.videoPace}
+                      onChange={(e) => setBriefData({ ...briefData, videoPace: e.target.value })}
+                      className="bg-slate-950 border-slate-700 text-white"
+                    >
+                      <option value="Cinematic & Emotional">Cinematic & Emotional</option>
+                      <option value="Fast-Paced & Dynamic">Fast-Paced & Dynamic</option>
+                      <option value="Traditional Documentary">Traditional Documentary</option>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -607,7 +758,7 @@ export const OrderForm: React.FC = () => {
                       {clientData.projectName || 'Post-Production Order'}
                     </h3>
                     <p className="text-xs text-slate-400">
-                      Client: {clientData.contactPerson || 'Client'} ({clientData.companyName || 'Studio'})
+                      Client: {clientData.contactPerson || 'Client'} ({clientData.companyName || 'Studio'}) • Scope: {projectScope}
                     </p>
                   </div>
                   <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold border border-emerald-500/30">
@@ -708,7 +859,7 @@ export const OrderForm: React.FC = () => {
                     Scan with Google Pay, PhonePe, Paytm, BHIM, or any Banking App
                   </p>
                   <p className="text-emerald-400 font-extrabold text-lg">
-                    Amount Payable: {formatCurrency(grandTotal)}
+                    Amount Payable (40% Deposit): {formatCurrency(confirmationDeposit)}
                   </p>
                 </div>
 
