@@ -1,30 +1,101 @@
-# dependencies
-/node_modules
-/.pnp
+# ── Dependencies ──────────────────────────────────────────
+node_modules/
+.pnp
 .pnp.js
+.pnp.cjs
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
 
-# testing
-/coverage
+# ── Build Outputs ─────────────────────────────────────────
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+.swc/
 
-# next.js
-/.next/
-/out/
+# ── Cache Files ───────────────────────────────────────────
+.cache/
+.eslintcache
+.stylelintcache
+.parcelcache/
+.rollup.cache
+.vite/
+.babel_cache/
+jest_cache/
+.jest-cache/
+node_modules/.cache/
 
-# production
-/build
+# ── Environment Files ─────────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+!.env.example
 
-# debug
+# ── Logs ──────────────────────────────────────────────────
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# local env files
-.env*.local
-.env
+# ── OS Files ──────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# vercel
+# ── IDE Files ─────────────────────────────────────────────
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# ── Testing ───────────────────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+cypress/screenshots/
+cypress/videos/
+*.snap.bak
+
+# ── Temp Files ────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.pid
+*.pid.lock
+*.seed
+
+# ── Type Declarations (generated) ─────────────────────────
+*.d.ts.map
+
+# ── Misc ──────────────────────────────────────────────────
 .vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+.netlify
+*.tgz
+*.tar.gz
