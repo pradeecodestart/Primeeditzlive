@@ -1,0 +1,21 @@
+[
+  {
+    "id": "up_afnrk7t",
+    "userId": "client-new",
+    "originalName": "raw_footage_4k.mp4",
+    "storedName": "1785616495732_43faae.mp4",
+    "size": 1048576,
+    "mimeType": "video/mp4",
+    "status": "COMPLETED",
+    "uploadOffset": 1048576,
+    "uniqueKey": "client-new-raw_footage_4k.mp4-1048576-1785616495732",
+    "client": {
+      "id": "client-new",
+      "firstName": "Valued",
+      "lastName": "Client",
+      "email": "client@example.com"
+    },
+    "createdAt": "2026-08-01T20:34:55.732Z",
+    "updatedAt": "2026-08-01T20:35:04.307Z"
+  }
+]

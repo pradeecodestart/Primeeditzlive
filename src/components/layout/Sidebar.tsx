@@ -29,6 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'ACCOUNTANT', 'SALES'] as Role[] },
   { label: 'Orders', href: '/orders', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'SALES'] as Role[] },
+  { label: 'Uploads', href: '/uploads', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'SALES'] as Role[] },
   { label: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'CLIENT', 'ACCOUNTANT'] as Role[] },
   { label: 'Clients', href: '/clients', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'PROJECT_MANAGER', 'SALES'] as Role[] },
   { label: 'Team', href: '/team', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'PROJECT_MANAGER'] as Role[] },

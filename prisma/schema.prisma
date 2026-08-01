@@ -91,6 +91,7 @@ model User {
   sessions        Session[]
   oauthAccounts   OAuthAccount[]
   auditLogs       AuditLog[]
+  uploads         Upload[]
 }
 
 model Session {
@@ -503,4 +504,30 @@ model Refund {
   processedAt     DateTime?
   createdAt       DateTime  @default(now())
 }
+
+enum UploadStatus {
+  UPLOADING
+  COMPLETED
+  FAILED
+}
+
+model Upload {
+  id            String       @id @default(cuid())
+  userId        String
+  originalName  String
+  storedName    String       @unique
+  size          BigInt
+  mimeType      String
+  status        UploadStatus @default(UPLOADING)
+  uploadOffset  BigInt       @default(0)
+  uniqueKey     String       @unique
+  metadata      Json?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 

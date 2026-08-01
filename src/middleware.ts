@@ -60,7 +60,11 @@ export default withAuth(
           return true;
         }
 
-        if (pathname.startsWith('/api/auth/')) {
+        if (
+          pathname.startsWith('/api/auth/') ||
+          pathname.startsWith('/api/files') ||
+          pathname.startsWith('/api/admin/files')
+        ) {
           return true;
         }
 
@@ -68,6 +72,8 @@ export default withAuth(
           pathname.startsWith('/api/clients/register') ||
           pathname.startsWith('/api/staff/accept-invite') ||
           pathname.startsWith('/api/orders') ||
+          pathname.startsWith('/api/files') ||
+          pathname.startsWith('/api/admin/files') ||
           pathname.startsWith('/api/team')
         ) {
           return true;
