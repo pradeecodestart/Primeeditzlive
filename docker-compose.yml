@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: postprod_db
+      TZ: Asia/Kolkata
     ports:
       - "5432:5432"
     volumes:
@@ -43,6 +44,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: 1
+      TZ: Asia/Kolkata
     depends_on:
       postgres:
         condition: service_healthy
