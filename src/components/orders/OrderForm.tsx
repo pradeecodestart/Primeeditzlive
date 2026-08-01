@@ -254,14 +254,6 @@ export const OrderForm: React.FC = () => {
     setTimeout(() => setCopied(false), 3000);
   };
 
-  if (!mounted) {
-    return (
-      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-center animate-pulse">
-        Initializing Order Booking System...
-      </div>
-    );
-  }
-
   // SUCCESS CONFIRMATION PAGE
   if (isOrderConfirmed) {
     return (
@@ -360,7 +352,7 @@ export const OrderForm: React.FC = () => {
 
       <Card className="border-indigo-500/30 bg-slate-900 text-white shadow-2xl">
         <CardHeader className="border-b border-slate-800 pb-4">
-          <CardTitle className="text-xl font-bold flex items-center justify-between text-indigo-300">
+          <CardTitle suppressHydrationWarning className="text-xl font-bold flex items-center justify-between text-indigo-300">
             <span>
               {step === 1 && 'Step 1: Client Profile & Project Setup'}
               {step === 2 && 'Step 2: File Upload & Asset Transfer Options'}

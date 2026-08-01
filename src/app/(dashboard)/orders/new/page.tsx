@@ -1,19 +1,5 @@
-'use client';
-
 import React from 'react';
-import dynamic from 'next/dynamic';
-
-const OrderForm = dynamic(
-  () => import('@/components/orders/OrderForm').then((mod) => mod.OrderForm),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-center animate-pulse">
-        Loading Order Booking System...
-      </div>
-    ),
-  }
-);
+import { OrderForm } from '@/components/orders/OrderForm';
 
 export default function NewOrderPage() {
   return (
