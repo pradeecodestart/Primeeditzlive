@@ -47,7 +47,7 @@ function ClientLoginForm() {
   };
 
   const handleGoogleSignIn = () => {
-    signIn('google', { callbackUrl: '/dashboard' });
+    window.location.href = '/api/auth/google/client';
   };
 
   return (
@@ -75,10 +75,9 @@ function ClientLoginForm() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 py-3 rounded-xl transition-all font-medium mb-6 shadow-sm"
+        <a
+          href="/api/auth/google/client"
+          className="w-full flex items-center justify-center gap-3 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 py-3 rounded-xl transition-all font-medium mb-6 shadow-sm cursor-pointer"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -99,7 +98,7 @@ function ClientLoginForm() {
             />
           </svg>
           Continue with Google
-        </button>
+        </a>
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">

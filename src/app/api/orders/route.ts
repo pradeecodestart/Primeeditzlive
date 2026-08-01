@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getSharedOrders, addSharedOrder, StoredOrder } from '@/lib/ordersStore';
 
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const filterEmail = searchParams.get('email') || session?.user?.email;
 
     let dbOrders: any[] = [];
     try {
@@ -30,28 +34,48 @@ export async function GET(req: Request) {
     dbOrders.forEach((o) => combinedMap.set(o.id, o));
 
     let allOrders = Array.from(combinedMap.values());
+
+    // Filter by client email if user is a client
+    const userRole = (session?.user as any)?.role || 'CLIENT';
+    const userPortal = (session?.user as any)?.portal || 'CLIENT';
+
+    if (filterEmail && (userRole === 'CLIENT' || userPortal === 'CLIENT')) {
+      const cleanEmail = filterEmail.toLowerCase().trim();
+      allOrders = allOrders.filter(
+        (o) =>
+          o.client?.email?.toLowerCase().trim() === cleanEmail ||
+          o.clientId === (session?.user as any)?.id
+      );
+    }
+
     if (status && status !== 'ALL') {
       allOrders = allOrders.filter((o) => o.status === status);
     }
 
     return NextResponse.json({ orders: allOrders });
   } catch (error: any) {
-    return NextResponse.json({ orders: getSharedOrders() });
+    return NextResponse.json({ orders: [] });
   }
 }
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
     const body = await req.json();
     const existingOrders = getSharedOrders();
     const orderNumber = `ORD-2024-${String(existingOrders.length + 1).padStart(3, '0')}`;
     const invoiceNumber = `PP-INV-2024-${String(existingOrders.length + 1).padStart(3, '0')}`;
     const orderId = `ord_${Math.random().toString(36).substring(2, 9)}`;
 
+    const clientEmail = body.clientEmail || session?.user?.email || 'client@example.com';
+    const clientName = session?.user?.name || body.clientName || 'Valued Client';
+    const firstName = clientName.split(' ')[0] || 'Client';
+    const lastName = clientName.split(' ')[1] || '';
+
     const newOrderObj: StoredOrder = {
       id: orderId,
       orderNumber,
-      clientId: body.clientId || 'client-1',
+      clientId: (session?.user as any)?.id || body.clientId || 'client-new',
       projectName: body.projectName || 'Untitled Order',
       serviceType: body.serviceType || 'Photo Editing',
       status: 'PENDING',
@@ -64,11 +88,11 @@ export async function POST(req: Request) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       client: {
-        id: 'client-1',
-        firstName: 'Bob',
-        lastName: 'Martinez',
-        email: 'bob@client.com',
-        company: 'Martinez Media Studio',
+        id: (session?.user as any)?.id || 'client-new',
+        firstName,
+        lastName,
+        email: clientEmail,
+        company: body.company || '',
       },
     };
 
@@ -81,7 +105,7 @@ export async function POST(req: Request) {
         data: {
           id: orderId,
           orderNumber,
-          clientId: body.clientId || 'bob-martinez-id',
+          clientId: (session?.user as any)?.id || 'client-new',
           projectName: body.projectName || 'Untitled Order',
           serviceType: body.serviceType || 'Photo Editing',
           priority: body.priority || 'MEDIUM',
@@ -95,7 +119,7 @@ export async function POST(req: Request) {
         data: {
           invoiceNumber,
           orderId,
-          clientId: 'bob-martinez-id',
+          clientId: (session?.user as any)?.id || 'client-new',
           subtotal: body.totalAmount || 150,
           taxRate: 10,
           taxAmount: Number(body.totalAmount || 150) * 0.1,
