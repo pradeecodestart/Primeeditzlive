@@ -26,7 +26,7 @@ services:
     container_name: postprod_app
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/postprod_db?schema=public
       - NEXTAUTH_URL=http://localhost:3000
