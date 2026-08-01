@@ -1,21 +1,18 @@
 'use client';
 
-import React from 'react';
-import { OrderForm } from '@/components/orders/OrderForm';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function NewOrderPage() {
+export default function DashboardOrderRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/orders/new');
+  }, [router]);
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Create New Order
-        </h1>
-        <p className="text-sm text-slate-500">
-          Configure service type, custom retouching options, upload files, and calculate live price.
-        </p>
-      </div>
-
-      <OrderForm />
+    <div className="p-8 text-center text-slate-400">
+      Loading Studio Order Booking System...
     </div>
   );
 }
