@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for PostProd Pro Next.js App
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Stage 1: Install dependencies
 FROM base AS deps
