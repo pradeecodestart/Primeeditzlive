@@ -18,9 +18,13 @@ import {
   RefreshCw,
   Folder,
   FolderOpen,
+  FolderPlus,
   Search,
   Filter,
   Layers,
+  Plus,
+  X,
+  FileArchive,
 } from 'lucide-react';
 import axios from 'axios';
 import { useSession } from 'next-auth/react';
@@ -28,6 +32,7 @@ import { useSession } from 'next-auth/react';
 export default function UploadsPage() {
   const { data: session } = useSession();
   const [files, setFiles] = useState<any[]>([]);
+  const [folders, setFolders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRescanning, setIsRescanning] = useState(false);
   const [rescanMessage, setRescanMessage] = useState('');
@@ -36,27 +41,55 @@ export default function UploadsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 
+  // Create folder modal state
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderColor, setNewFolderColor] = useState('#3B82F6');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+
   const userRole = (session?.user as any)?.role || 'CLIENT';
   const isStaffOrAdmin = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'PROJECT_MANAGER'].includes(userRole);
 
-  const [mounted, setMounted] = useState(false);
-
-  const fetchFiles = async () => {
+  const fetchFilesAndFolders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/files');
-      setFiles(res.data.files || []);
+      const [filesRes, foldersRes] = await Promise.all([
+        axios.get('/api/files').catch(() => ({ data: { files: [] } })),
+        axios.get('/api/folders').catch(() => ({ data: [] })),
+      ]);
+      setFiles(filesRes.data.files || []);
+      setFolders(foldersRes.data || []);
     } catch (err) {
-      console.error('Error fetching files:', err);
+      console.error('Error fetching files and folders:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setMounted(true);
-    fetchFiles();
+    fetchFilesAndFolders();
   }, []);
+
+  const handleCreateFolder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFolderName.trim()) return;
+
+    try {
+      setIsCreatingFolder(true);
+      await axios.post('/api/folders', {
+        name: newFolderName.trim(),
+        color: newFolderColor,
+        icon: '📁',
+      });
+      setNewFolderName('');
+      setShowFolderModal(false);
+      fetchFilesAndFolders();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to create folder');
+    } finally {
+      setIsCreatingFolder(false);
+    }
+  };
 
   const handleRescan = async () => {
     try {
@@ -64,7 +97,7 @@ export default function UploadsPage() {
       setRescanMessage('');
       const res = await axios.post('/api/files/admin/rescan');
       setRescanMessage(res.data.message || 'Rescan completed successfully');
-      fetchFiles();
+      fetchFilesAndFolders();
     } catch (err: any) {
       setRescanMessage(err.response?.data?.error || 'Rescan failed');
     } finally {
@@ -72,13 +105,23 @@ export default function UploadsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteFile = async (id: string) => {
     if (!confirm('Are you sure you want to delete this file from disk and database?')) return;
     try {
       await axios.delete(`/api/files/${id}`);
-      fetchFiles();
+      fetchFilesAndFolders();
     } catch (err) {
       alert('Failed to delete file');
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!confirm('Are you sure you want to delete this folder and all its contents?')) return;
+    try {
+      await axios.delete(`/api/folders/${folderId}`);
+      fetchFilesAndFolders();
+    } catch (err) {
+      alert('Failed to delete folder');
     }
   };
 
@@ -90,15 +133,23 @@ export default function UploadsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Group files into virtual folders
-  const folderGroups = files.reduce((acc: Record<string, any[]>, file) => {
+  // Group files into virtual folders based on folderPath
+  const fileFolderGroups = files.reduce((acc: Record<string, any[]>, file) => {
     const folder = file.folderPath || 'Root Direct Uploads';
     if (!acc[folder]) acc[folder] = [];
     acc[folder].push(file);
     return acc;
   }, {});
 
-  const folderNames = Object.keys(folderGroups);
+  const virtualFolderNames = Object.keys(fileFolderGroups);
+
+  // Combine DB folders and Virtual folders
+  const allFolderList = Array.from(
+    new Set([
+      ...folders.map((f) => f.name),
+      ...virtualFolderNames.filter((f) => f !== 'Root Direct Uploads'),
+    ])
+  );
 
   // Filter files based on tab, search query, and selected folder
   const filteredFiles = files.filter((file) => {
@@ -106,14 +157,20 @@ export default function UploadsPage() {
       file.originalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (file.folderPath && file.folderPath.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    const matchesFolder = selectedFolder ? (file.folderPath || 'Root Direct Uploads') === selectedFolder : true;
+    const fileFolder = file.folderPath || 'Root Direct Uploads';
+    const matchesFolder = selectedFolder ? fileFolder.includes(selectedFolder) : true;
 
     if (!matchesSearch || !matchesFolder) return false;
 
     if (activeTab === 'VIDEO') return file.mimeType?.startsWith('video');
     if (activeTab === 'IMAGE') return file.mimeType?.startsWith('image');
     if (activeTab === 'AUDIO') return file.mimeType?.startsWith('audio');
-    if (activeTab === 'DOCS') return !file.mimeType?.startsWith('video') && !file.mimeType?.startsWith('image') && !file.mimeType?.startsWith('audio');
+    if (activeTab === 'DOCS')
+      return (
+        !file.mimeType?.startsWith('video') &&
+        !file.mimeType?.startsWith('image') &&
+        !file.mimeType?.startsWith('audio')
+      );
     if (activeTab === 'FOLDERS') return Boolean(file.folderPath);
 
     return true;
@@ -132,16 +189,25 @@ export default function UploadsPage() {
           </p>
         </div>
 
-        {isStaffOrAdmin && (
+        <div className="flex flex-wrap items-center gap-2">
           <Button
-            disabled={isRescanning}
-            onClick={handleRescan}
+            onClick={() => setShowFolderModal(true)}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs gap-2 shadow-lg shadow-indigo-600/30"
           >
-            <FolderSync className={`w-4 h-4 ${isRescanning ? 'animate-spin' : ''}`} />
-            {isRescanning ? 'Scanning Local PC Storage...' : 'Rescan Storage Folder'}
+            <FolderPlus className="w-4 h-4" /> Create New Folder
           </Button>
-        )}
+
+          {isStaffOrAdmin && (
+            <Button
+              disabled={isRescanning}
+              onClick={handleRescan}
+              className="bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 font-bold text-xs gap-2"
+            >
+              <FolderSync className={`w-4 h-4 ${isRescanning ? 'animate-spin' : ''}`} />
+              {isRescanning ? 'Scanning Storage...' : 'Rescan PC Storage'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {rescanMessage && (
@@ -151,8 +217,77 @@ export default function UploadsPage() {
         </div>
       )}
 
+      {/* Create Folder Modal */}
+      {showFolderModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 text-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-indigo-300 flex items-center gap-2">
+                <FolderPlus className="w-5 h-5 text-indigo-400" /> Create Custom Project Folder
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowFolderModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateFolder} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">Folder Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Wedding_Raw_Footage_2024"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">Folder Tag Color</label>
+                <div className="flex items-center gap-3">
+                  {['#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6', '#6366F1'].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewFolderColor(color)}
+                      style={{ backgroundColor: color }}
+                      className={`w-7 h-7 rounded-full border-2 transition-all ${
+                        newFolderColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  type="submit"
+                  disabled={isCreatingFolder}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex-1 py-2.5"
+                >
+                  {isCreatingFolder ? 'Creating...' : 'Create Folder'}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setShowFolderModal(false)}
+                  variant="ghost"
+                  className="text-slate-400 hover:text-white text-xs flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Resumable Uploader Component */}
-      <ResumableUploader onUploadSuccess={fetchFiles} />
+      <ResumableUploader onUploadSuccess={fetchFilesAndFolders} />
 
       {/* Storage Organization & Folders Overview */}
       <div className="space-y-6">
@@ -161,8 +296,8 @@ export default function UploadsPage() {
           {/* Tabs */}
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { key: 'ALL', label: 'All Files', icon: Layers },
-              { key: 'FOLDERS', label: `📁 Folders (${folderNames.filter((f) => f !== 'Root Direct Uploads').length})`, icon: Folder },
+              { key: 'ALL', label: 'All Assets', icon: Layers },
+              { key: 'FOLDERS', label: `📁 Project Folders (${allFolderList.length})`, icon: Folder },
               { key: 'VIDEO', label: '🎥 Videos', icon: FileVideo },
               { key: 'IMAGE', label: '📷 Photos & RAW', icon: FileImage },
               { key: 'AUDIO', label: '🎵 Audio', icon: FileText },
@@ -198,11 +333,14 @@ export default function UploadsPage() {
           </div>
         </div>
 
-        {/* Folders Grid View */}
-        {folderNames.length > 0 && (
+        {/* Folders Cards View */}
+        {allFolderList.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {folderNames.map((folderName) => {
-              const folderFiles = folderGroups[folderName];
+            {allFolderList.map((folderName) => {
+              const matchedDbFolder = folders.find((f) => f.name === folderName);
+              const folderFiles = files.filter(
+                (f) => (f.folderPath || 'Root Direct Uploads').includes(folderName)
+              );
               const totalSize = folderFiles.reduce((acc, f) => acc + (f.size || 0), 0);
               const isSelected = selectedFolder === folderName;
 
@@ -217,18 +355,36 @@ export default function UploadsPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="p-3 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+                    <div
+                      className="p-3 rounded-xl text-indigo-400 border border-indigo-500/30"
+                      style={{ backgroundColor: `${matchedDbFolder?.color || '#3B82F6'}20` }}
+                    >
                       {isSelected ? <FolderOpen className="w-6 h-6" /> : <Folder className="w-6 h-6" />}
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full bg-slate-950 text-indigo-300 text-[10px] font-mono font-bold border border-slate-800">
-                      {folderFiles.length} {folderFiles.length === 1 ? 'File' : 'Files'}
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-slate-950 text-indigo-300 text-[10px] font-mono font-bold border border-slate-800">
+                        {folderFiles.length} {folderFiles.length === 1 ? 'File' : 'Files'}
+                      </span>
+
+                      {matchedDbFolder && (
+                        <a
+                          href={`/api/folders/${matchedDbFolder.id}/download-zip`}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1 rounded-lg bg-slate-800 hover:bg-indigo-600/30 text-indigo-300 border border-slate-700 transition-all"
+                          title="Download Folder ZIP"
+                        >
+                          <FileArchive className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
 
                   <p className="font-bold text-sm text-white truncate" title={folderName}>
                     {folderName}
                   </p>
-                  <p className="text-xs text-slate-400 font-mono mt-1">Total: {formatSize(totalSize)}</p>
+                  <p className="text-xs text-slate-400 font-mono mt-1">Total Size: {formatSize(totalSize)}</p>
                 </div>
               );
             })}
@@ -257,7 +413,7 @@ export default function UploadsPage() {
               <CardTitle className="text-base font-bold text-indigo-300 uppercase tracking-wide">
                 Files & Assets Registry ({filteredFiles.length})
               </CardTitle>
-              <Button size="sm" variant="ghost" onClick={fetchFiles} className="text-slate-400 hover:text-white text-xs gap-1">
+              <Button size="sm" variant="ghost" onClick={fetchFilesAndFolders} className="text-slate-400 hover:text-white text-xs gap-1">
                 <RefreshCw className="w-3.5 h-3.5" /> Refresh Registry
               </Button>
             </div>
@@ -270,7 +426,7 @@ export default function UploadsPage() {
               </div>
             ) : filteredFiles.length === 0 ? (
               <div className="py-12 text-center text-slate-500 text-xs italic">
-                No files match your selected folder or search query.
+                No files found in registry. Drop folders or select files above to begin resumable upload.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -347,7 +503,7 @@ export default function UploadsPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleDelete(file.id)}
+                            onClick={() => handleDeleteFile(file.id)}
                             className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 transition-all"
                             title="Delete File"
                           >
