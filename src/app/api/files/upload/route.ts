@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     } catch {}
 
     const body = await req.json();
-    const { fileName, fileSize, mimeType, uniqueKey } = body;
+    const { fileName, fileSize, mimeType, uniqueKey, folderPath } = body;
 
     if (!fileName || !fileSize) {
       return NextResponse.json({ error: 'fileName and fileSize are required' }, { status: 400 });
@@ -44,6 +44,7 @@ export async function POST(req: Request) {
       status: 'UPLOADING',
       uploadOffset: 0,
       uniqueKey: uniqueKey || `${userId}-${fileName}-${fileSize}-${Date.now()}`,
+      folderPath: folderPath || '',
       client: {
         id: userId,
         firstName: userName.split(' ')[0] || 'Client',

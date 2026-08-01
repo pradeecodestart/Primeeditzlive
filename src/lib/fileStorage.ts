@@ -12,6 +12,7 @@ export interface StoredFile {
   status: 'UPLOADING' | 'COMPLETED' | 'FAILED';
   uploadOffset: number;
   uniqueKey: string;
+  folderPath?: string;
   metadata?: any;
   createdAt: string;
   updatedAt: string;

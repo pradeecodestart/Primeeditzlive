@@ -1,5 +1,24 @@
 [
   {
+    "id": "up_ukdma99",
+    "userId": "100605893078375697174",
+    "originalName": "082.jpg",
+    "storedName": "1785617080642_gof2d5.jpg",
+    "size": 35169744,
+    "mimeType": "image/jpeg",
+    "status": "UPLOADING",
+    "uploadOffset": 0,
+    "uniqueKey": "082.jpg-35169744-1784746267156",
+    "client": {
+      "id": "100605893078375697174",
+      "firstName": "Pradee",
+      "lastName": "B",
+      "email": "pradeesysglobe@gmail.com"
+    },
+    "createdAt": "2026-08-01T20:44:40.643Z",
+    "updatedAt": "2026-08-01T20:44:40.643Z"
+  },
+  {
     "id": "up_afnrk7t",
     "userId": "client-new",
     "originalName": "raw_footage_4k.mp4",

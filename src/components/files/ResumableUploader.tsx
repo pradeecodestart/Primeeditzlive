@@ -19,6 +19,8 @@ import {
   Trash2,
   Plus,
   Layers,
+  FolderPlus,
+  Folder,
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -35,6 +37,7 @@ export interface QueueItem {
   uploadId?: string;
   errorMessage?: string;
   currentChunkIndex: number;
+  folderPath?: string;
 }
 
 export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSuccess }) => {
@@ -43,6 +46,8 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
   const [isBatchUploading, setIsBatchUploading] = useState(false);
 
   const pausedFlagsRef = useRef<{ [id: string]: boolean }>({});
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
 
   // Handle Drag Over / Drag Leave / Drop
@@ -59,14 +64,21 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
   };
 
   const addFilesToQueue = (fileList: FileList | File[]) => {
-    const newItems: QueueItem[] = Array.from(fileList).map((file) => ({
-      id: `q_${Math.random().toString(36).substring(2, 9)}`,
-      file,
-      progress: 0,
-      uploadedBytes: 0,
-      status: 'IDLE',
-      currentChunkIndex: 0,
-    }));
+    const newItems: QueueItem[] = Array.from(fileList).map((file) => {
+      const relPath = (file as any).webkitRelativePath || '';
+      const pathParts = relPath.split('/');
+      const folderPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : '';
+
+      return {
+        id: `q_${Math.random().toString(36).substring(2, 9)}`,
+        file,
+        progress: 0,
+        uploadedBytes: 0,
+        status: 'IDLE',
+        currentChunkIndex: 0,
+        folderPath,
+      };
+    });
 
     setQueue((prev) => [...prev, ...newItems]);
   };
@@ -84,14 +96,13 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       addFilesToQueue(e.target.files);
-      e.target.value = ''; // Reset input
+      e.target.value = '';
     }
   };
 
   const uploadSingleItem = async (item: QueueItem) => {
     pausedFlagsRef.current[item.id] = false;
 
-    // Set item status to UPLOADING
     setQueue((prev) =>
       prev.map((q) => (q.id === item.id ? { ...q, status: 'UPLOADING', errorMessage: '' } : q))
     );
@@ -99,13 +110,13 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
     try {
       let activeUploadId = item.uploadId;
 
-      // Initialize session if not exists
       if (!activeUploadId) {
         const initRes = await axios.post('/api/files/upload', {
           fileName: item.file.name,
           fileSize: item.file.size,
           mimeType: item.file.type || 'application/octet-stream',
           uniqueKey: `${item.file.name}-${item.file.size}-${item.file.lastModified}`,
+          folderPath: item.folderPath || '',
         });
 
         activeUploadId = initRes.data.uploadId;
@@ -151,7 +162,6 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
         );
       }
 
-      // Complete upload
       await axios.post(`/api/files/complete/${activeUploadId}`);
 
       setQueue((prev) =>
@@ -213,23 +223,23 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
       <CardHeader className="border-b border-slate-800 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle className="text-base font-bold text-indigo-300 flex items-center gap-2 uppercase tracking-wide">
-            <UploadCloud className="w-5 h-5 text-indigo-400" /> Drag & Drop Resumable Multi-File Uploader
+            <UploadCloud className="w-5 h-5 text-indigo-400" /> Resumable Folders & Multiple Files Uploader
           </CardTitle>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-mono font-bold border border-indigo-500/30">
-              MULTIPLE FILES • 5MB CHUNKS
+              DIRECTORIES & FILES • 5MB CHUNKS
             </span>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6 pt-6">
-        {/* Drag and Drop Zone */}
-        <label
+        {/* Drag and Drop Zone & Action Buttons */}
+        <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 ${
+          className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all duration-300 ${
             isDragging
               ? 'border-indigo-400 bg-indigo-600/20 scale-[1.01] shadow-2xl shadow-indigo-500/20'
               : 'border-slate-700 hover:border-indigo-500 bg-slate-950/60 hover:bg-slate-900'
@@ -240,20 +250,47 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
           </div>
 
           <span className="text-sm font-bold text-white mb-1 text-center">
-            {isDragging ? 'Drop your raw footage files here now!' : 'Click to select or DRAG & DROP multiple raw footage files here'}
+            {isDragging ? 'Drop your folders or files here now!' : 'DRAG & DROP folders or files here, or choose an option below'}
           </span>
 
-          <span className="text-xs text-slate-400 font-mono text-center">
-            Supports selecting 10+ 4K Videos (MP4, MOV, AVI), RAW Photos, Audio & ZIPs
+          <span className="text-xs text-slate-400 font-mono text-center mb-5">
+            Supports entire folders (e.g. Wedding_Shoot_Day1/), 4K Videos, RAW Photos & Audio
           </span>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs gap-2 shadow-lg shadow-indigo-600/30"
+            >
+              <Plus className="w-4 h-4" /> Select Files
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() => folderInputRef.current?.click()}
+              className="bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 font-bold text-xs gap-2"
+            >
+              <FolderPlus className="w-4 h-4 text-indigo-400" /> Select Entire Folder
+            </Button>
+          </div>
 
           <input
+            ref={fileInputRef}
             type="file"
             multiple
             onChange={handleFileInputChange}
             className="hidden"
           />
-        </label>
+
+          <input
+            ref={folderInputRef}
+            type="file"
+            {...({ webkitdirectory: '', directory: '', multiple: true } as any)}
+            onChange={handleFileInputChange}
+            className="hidden"
+          />
+        </div>
 
         {/* Batch Queue Header & Controls */}
         {queue.length > 0 && (
@@ -261,7 +298,7 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-slate-950 border border-slate-800">
               <div>
                 <p className="font-bold text-sm text-indigo-300 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-indigo-400" /> Upload Queue ({queue.length} Files • Total: {formatSize(totalBytesInQueue)})
+                  <Layers className="w-4 h-4 text-indigo-400" /> Upload Queue ({queue.length} Items • Total: {formatSize(totalBytesInQueue)})
                 </p>
                 <p className="text-xs text-slate-400 font-mono mt-0.5">
                   Overall Batch Progress: {overallProgress}% ({formatSize(totalUploadedInQueue)} uploaded)
@@ -308,8 +345,15 @@ export const ResumableUploader: React.FC<ResumableUploaderProps> = ({ onUploadSu
                       </div>
 
                       <div className="min-w-0">
-                        <p className="font-bold text-xs text-white truncate">{item.file.name}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-xs text-white truncate">{item.file.name}</p>
+                          {item.folderPath && (
+                            <span className="px-2 py-0.5 bg-slate-800 text-indigo-300 rounded text-[10px] font-mono flex items-center gap-1 border border-slate-700">
+                              <Folder className="w-3 h-3 text-indigo-400" /> {item.folderPath}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">
                           {formatSize(item.file.size)} • {item.file.type || 'RAW/Binary'}
                         </p>
                       </div>
