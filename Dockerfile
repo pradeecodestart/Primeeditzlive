@@ -1,25 +1,26 @@
-FROM node:20-alpine
-
-# Install libc6-compat and OpenSSL for Prisma engine compatibility
-RUN apk add --no-cache libc6-compat openssl
-
+FROM node:20-slim AS builder
 WORKDIR /app
-
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
-COPY prisma ./prisma
-
-RUN npm install --legacy-peer-deps
-
 COPY . .
-
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-RUN npx prisma generate
+RUN npm ci --legacy-peer-deps
 RUN npm run build
 
-EXPOSE 3000
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-CMD ["npm", "start"]
+RUN apk add --no-cache openssl libc6-compat
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+CMD ["node", "server.js"]
