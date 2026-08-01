@@ -63,6 +63,7 @@ export default withAuth(
         if (
           pathname.startsWith('/api/auth/') ||
           pathname.startsWith('/api/files') ||
+          pathname.startsWith('/api/folders') ||
           pathname.startsWith('/api/admin/files')
         ) {
           return true;

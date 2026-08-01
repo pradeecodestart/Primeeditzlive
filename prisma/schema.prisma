@@ -92,6 +92,7 @@ model User {
   oauthAccounts   OAuthAccount[]
   auditLogs       AuditLog[]
   uploads         Upload[]
+  folders         Folder[]
 }
 
 model Session {
@@ -507,27 +508,66 @@ model Refund {
 
 enum UploadStatus {
   UPLOADING
+  PROCESSING
   COMPLETED
   FAILED
 }
 
-model Upload {
-  id            String       @id @default(cuid())
-  userId        String
-  originalName  String
-  storedName    String       @unique
-  size          BigInt
-  mimeType      String
-  status        UploadStatus @default(UPLOADING)
-  uploadOffset  BigInt       @default(0)
-  uniqueKey     String       @unique
-  metadata      Json?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+model Folder {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  name        String
+  path        String
+  parentId    String?  @map("parent_id")
+  color       String?
+  icon        String?
+  isShared    Boolean  @default(false) @map("is_shared")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderHierarchy")
+  uploads  Upload[]
+
+  @@unique([userId, path])
+  @@index([userId])
+  @@index([parentId])
+  @@map("folders")
+}
+
+model Upload {
+  id           String       @id @default(cuid())
+  userId       String       @map("user_id")
+  folderId     String?      @map("folder_id")
+  originalName String       @map("original_name")
+  storedName   String       @unique @map("stored_name")
+  relativePath String?      @map("relative_path")
+  size         BigInt
+  mimeType     String       @map("mime_type")
+  extension    String?
+  status       UploadStatus @default(UPLOADING)
+  uploadOffset BigInt       @default(0) @map("upload_offset")
+  uniqueKey    String       @unique @map("unique_key")
+  thumbnail    String?
+  duration     Int?
+  width        Int?
+  height       Int?
+  metadata     Json?
+  tags         String[]     @default([])
+  description  String?
+  isSample     Boolean      @default(false) @map("is_sample")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([folderId])
+  @@index([status])
+  @@map("uploads")
 }
+
 
 
