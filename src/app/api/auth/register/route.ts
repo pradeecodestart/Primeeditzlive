@@ -5,6 +5,18 @@ import { prisma } from '@/lib/prisma';
 import { saveRegisteredUser, getRegisteredUserByEmail } from '@/lib/registeredUsersStore';
 import { sendVerificationEmail } from '@/lib/emailService';
 
+function fixEmailDomainTypo(email: string): string {
+  let cleaned = email.toLowerCase().trim();
+  // Common typo fixes for gmail.com
+  cleaned = cleaned.replace(/@gmial\.com$/, '@gmail.com');
+  cleaned = cleaned.replace(/@gmai\.com$/, '@gmail.com');
+  cleaned = cleaned.replace(/@gmal\.com$/, '@gmail.com');
+  cleaned = cleaned.replace(/@gamil\.com$/, '@gmail.com');
+  cleaned = cleaned.replace(/@hotmial\.com$/, '@hotmail.com');
+  cleaned = cleaned.replace(/@yaho\.com$/, '@yahoo.com');
+  return cleaned;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -17,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const cleanEmail = fixEmailDomainTypo(email);
     const targetPortal = (portal || 'CLIENT').toUpperCase() === 'STAFF' ? 'STAFF' : 'CLIENT';
     const assignedRole = targetPortal === 'STAFF' ? 'STAFF' : 'CLIENT';
 
