@@ -10,14 +10,25 @@ process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL
   : 'http://localhost:3000';
 
 export type UserRole =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'MANAGER'
+  | 'STAFF'
+  | 'CLIENT'
+  | 'GUEST'
   | 'CEO'
   | 'PROJECT_MANAGER'
   | 'EDITOR'
   | 'ACCOUNTANT'
-  | 'SALES'
-  | 'CLIENT';
+  | 'SALES';
+
+export type UserPortal = 'STAFF' | 'CLIENT';
 
 export const STAFF_ROLES: UserRole[] = [
+  'SUPER_ADMIN',
+  'ADMIN',
+  'MANAGER',
+  'STAFF',
   'CEO',
   'PROJECT_MANAGER',
   'EDITOR',
@@ -25,9 +36,10 @@ export const STAFF_ROLES: UserRole[] = [
   'SALES',
 ];
 
-export const CLIENT_ROLES: UserRole[] = ['CLIENT'];
+export const CLIENT_ROLES: UserRole[] = ['CLIENT', 'GUEST'];
 
 const STAFF_EMAILS = [
+  'admin@company.com',
   'john@postprodpro.com',
   'sarah@postprodpro.com',
   'mike@postprodpro.com',
@@ -45,6 +57,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   providers: [
     GoogleProvider({
@@ -70,6 +83,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        portal: { label: 'Portal', type: 'text' },
         loginType: { label: 'Login Type', type: 'text' },
       },
       async authorize(credentials) {
@@ -78,12 +92,12 @@ export const authOptions: NextAuthOptions = {
         }
 
         const email = credentials.email.toLowerCase().trim();
-        const loginType = credentials.loginType || 'CLIENT';
+        const targetPortal: UserPortal = (credentials.portal || credentials.loginType || 'CLIENT').toUpperCase() as UserPortal;
 
         // Check if staff trying to use client portal
         const isStaffEmail = STAFF_EMAILS.includes(email);
-        if (loginType === 'CLIENT' && isStaffEmail) {
-          throw new Error('Staff members must login at /staff/login');
+        if (targetPortal === 'CLIENT' && isStaffEmail) {
+          throw new Error('Staff members must login at the staff portal');
         }
 
         let user: any = null;
@@ -103,17 +117,18 @@ export const authOptions: NextAuthOptions = {
           if (dbError.message === 'Invalid email or password') {
             throw dbError;
           }
-          console.warn('Database connection unavailable during auth:', dbError);
+          console.warn('Database connection fallback:', dbError);
           user = null;
         }
 
-        const demoStaffAccounts: Record<string, { id: string; name: string; role: UserRole }> = {
-          'john@postprodpro.com': { id: 'ceo-1', name: 'John Smith', role: 'CEO' },
-          'sarah@postprodpro.com': { id: 'manager-1', name: 'Sarah Johnson', role: 'PROJECT_MANAGER' },
-          'mike@postprodpro.com': { id: 'editor-1', name: 'Mike Chen', role: 'EDITOR' },
-          'lisa@postprodpro.com': { id: 'editor-2', name: 'Lisa Wong', role: 'EDITOR' },
-          'tom@postprodpro.com': { id: 'accountant-1', name: 'Tom Davis', role: 'ACCOUNTANT' },
-          'emma@postprodpro.com': { id: 'sales-1', name: 'Emma Wilson', role: 'SALES' },
+        const demoStaffAccounts: Record<string, { id: string; name: string; role: UserRole; portal: UserPortal }> = {
+          'admin@company.com': { id: 'admin-0', name: 'System Admin', role: 'SUPER_ADMIN', portal: 'STAFF' },
+          'john@postprodpro.com': { id: 'ceo-1', name: 'John Smith', role: 'CEO', portal: 'STAFF' },
+          'sarah@postprodpro.com': { id: 'manager-1', name: 'Sarah Johnson', role: 'PROJECT_MANAGER', portal: 'STAFF' },
+          'mike@postprodpro.com': { id: 'editor-1', name: 'Mike Chen', role: 'EDITOR', portal: 'STAFF' },
+          'lisa@postprodpro.com': { id: 'editor-2', name: 'Lisa Wong', role: 'EDITOR', portal: 'STAFF' },
+          'tom@postprodpro.com': { id: 'accountant-1', name: 'Tom Davis', role: 'ACCOUNTANT', portal: 'STAFF' },
+          'emma@postprodpro.com': { id: 'sales-1', name: 'Emma Wilson', role: 'SALES', portal: 'STAFF' },
         };
 
         const registeredUser = getRegisteredUserByEmail(email);
@@ -128,7 +143,8 @@ export const authOptions: NextAuthOptions = {
             email: registeredUser.email,
             firstName: registeredUser.firstName,
             lastName: registeredUser.lastName,
-            role: registeredUser.role,
+            role: registeredUser.role || 'CLIENT',
+            portal: registeredUser.portal || 'CLIENT',
             avatar: null,
             isActive: true,
           };
@@ -140,11 +156,12 @@ export const authOptions: NextAuthOptions = {
             firstName: demo.name.split(' ')[0],
             lastName: demo.name.split(' ')[1] || '',
             role: demo.role,
+            portal: demo.portal,
             avatar: null,
             isActive: true,
           };
-        } else if (!user && loginType === 'CLIENT') {
-          // Dynamic client user fallback for newly registered or custom client emails
+        } else if (!user && targetPortal === 'CLIENT') {
+          // Dynamic client user fallback
           const namePart = email.split('@')[0];
           user = {
             id: `client_${Math.random().toString(36).substring(2, 9)}`,
@@ -152,21 +169,22 @@ export const authOptions: NextAuthOptions = {
             firstName: namePart.charAt(0).toUpperCase() + namePart.slice(1),
             lastName: 'Client',
             role: 'CLIENT',
+            portal: 'CLIENT',
             avatar: null,
             isActive: true,
           };
         } else if (!user) {
-          throw new Error('Invalid staff email or password');
+          throw new Error('Invalid credentials or access denied');
         }
 
         const isStaffRole = STAFF_ROLES.includes(user.role as UserRole);
         const isClientRole = CLIENT_ROLES.includes(user.role as UserRole);
 
-        if (loginType === 'CLIENT' && isStaffRole) {
+        if (targetPortal === 'CLIENT' && isStaffRole) {
           throw new Error('Staff members must login at /staff/login');
         }
 
-        if (loginType === 'STAFF' && isClientRole) {
+        if (targetPortal === 'STAFF' && isClientRole) {
           throw new Error('Clients must login at the client portal');
         }
 
@@ -175,6 +193,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: `${user.firstName} ${user.lastName || ''}`.trim(),
           role: user.role,
+          portal: user.portal || targetPortal,
           avatar: user.avatar || null,
         };
       },
@@ -188,6 +207,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || 'CLIENT';
+        token.portal = (user as any).portal || 'CLIENT';
         token.avatar = (user as any).avatar || (user as any).image;
       }
       return token;
@@ -196,6 +216,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id as string;
         (session.user as any).role = (token.role as any) || 'CLIENT';
+        (session.user as any).portal = (token.portal as any) || 'CLIENT';
         (session.user as any).avatar = token.avatar as any;
       }
       return session;

@@ -6,7 +6,8 @@ export interface RegisteredUser {
   password: string; // bcrypt hash or plain text for local fallback
   firstName: string;
   lastName: string;
-  role: 'CLIENT' | 'CEO' | 'PROJECT_MANAGER' | 'EDITOR' | 'ACCOUNTANT' | 'SALES';
+  role: string;
+  portal?: string;
   company?: string;
   phone?: string;
 }

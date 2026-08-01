@@ -6,7 +6,7 @@ import { saveRegisteredUser, getRegisteredUserByEmail } from '@/lib/registeredUs
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { firstName, lastName, email, password, company, phone } = body;
+    const { firstName, lastName, email, password, company, phone, portal } = body;
 
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
@@ -16,6 +16,8 @@ export async function POST(req: Request) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const targetPortal = (portal || 'CLIENT').toUpperCase() === 'STAFF' ? 'STAFF' : 'CLIENT';
+    const assignedRole = targetPortal === 'STAFF' ? 'STAFF' : 'CLIENT';
 
     // Check registered store first
     const existingMemoryUser = getRegisteredUserByEmail(cleanEmail);
@@ -49,7 +51,8 @@ export async function POST(req: Request) {
       password: hashedPassword,
       firstName,
       lastName,
-      role: 'CLIENT' as const,
+      role: assignedRole as any,
+      portal: targetPortal as any,
       company: company || '',
       phone: phone || '',
     };
@@ -66,10 +69,11 @@ export async function POST(req: Request) {
           lastName,
           email: cleanEmail,
           password: hashedPassword,
-          role: 'CLIENT',
+          role: assignedRole as any,
+          portal: targetPortal as any,
           company: company || null,
           phone: phone || null,
-        },
+        } as any,
       });
     } catch (dbErr) {
       // Ignored if db initializing
@@ -83,6 +87,7 @@ export async function POST(req: Request) {
         email: newUserObj.email,
         name: `${newUserObj.firstName} ${newUserObj.lastName}`,
         role: newUserObj.role,
+        portal: newUserObj.portal,
       },
     });
   } catch (error: any) {
