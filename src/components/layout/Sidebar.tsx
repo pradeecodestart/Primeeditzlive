@@ -27,14 +27,14 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'ACCOUNTANT', 'SALES'] },
-  { label: 'Orders', href: '/orders', icon: ShoppingBag, roles: ['CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'SALES'] },
-  { label: 'Invoices', href: '/invoices', icon: FileText, roles: ['CEO', 'CLIENT', 'ACCOUNTANT'] },
-  { label: 'Clients', href: '/clients', icon: Users, roles: ['CEO', 'PROJECT_MANAGER', 'SALES'] },
-  { label: 'Team', href: '/team', icon: UserCheck, roles: ['CEO', 'PROJECT_MANAGER'] },
-  { label: 'Chat', href: '/chat', icon: MessageSquare, roles: ['CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'SALES'] },
-  { label: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['CEO', 'ACCOUNTANT'] },
-  { label: 'Settings', href: '/settings', icon: Settings, roles: ['CEO'] },
+  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'ACCOUNTANT', 'SALES'] as Role[] },
+  { label: 'Orders', href: '/orders', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'SALES'] as Role[] },
+  { label: 'Invoices', href: '/invoices', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'CLIENT', 'ACCOUNTANT'] as Role[] },
+  { label: 'Clients', href: '/clients', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'PROJECT_MANAGER', 'SALES'] as Role[] },
+  { label: 'Team', href: '/team', icon: UserCheck, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'PROJECT_MANAGER'] as Role[] },
+  { label: 'Chat', href: '/chat', icon: MessageSquare, roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'SALES'] as Role[] },
+  { label: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'CEO', 'ACCOUNTANT'] as Role[] },
+  { label: 'Settings', href: '/settings', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN', 'CEO'] as Role[] },
 ];
 
 export const Sidebar: React.FC = () => {
