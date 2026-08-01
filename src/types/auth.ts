@@ -1,4 +1,15 @@
-export type Role = 'CEO' | 'PROJECT_MANAGER' | 'EDITOR' | 'CLIENT' | 'ACCOUNTANT' | 'SALES';
+export type Role =
+  | 'SUPER_ADMIN'
+  | 'ADMIN'
+  | 'MANAGER'
+  | 'STAFF'
+  | 'CLIENT'
+  | 'GUEST'
+  | 'CEO'
+  | 'PROJECT_MANAGER'
+  | 'EDITOR'
+  | 'ACCOUNTANT'
+  | 'SALES';
 
 export interface User {
   id: string;
@@ -6,6 +17,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: Role;
+  portal?: string;
   avatar?: string | null;
   phone?: string | null;
   company?: string | null;
@@ -21,6 +33,7 @@ export interface AuthSession {
     email: string;
     name: string;
     role: Role;
+    portal?: string;
     avatar?: string | null;
   };
   expires: string;

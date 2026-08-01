@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { CEODashboard } from '@/components/dashboard/CEODashboard';
@@ -13,15 +14,24 @@ export default function DashboardPage() {
   const { role } = useAuth();
   const [overrideRole, setOverrideRole] = useState<Role | null>(null);
 
-  const activeRole: Role = overrideRole || role || 'CEO';
+  const userRole: Role = role || 'CLIENT';
+  const isClient = userRole === 'CLIENT' && !overrideRole;
+
+  if (isClient) {
+    return <ClientDashboard />;
+  }
+
+  const activeRole: Role = overrideRole || userRole;
 
   return (
     <div className="space-y-6">
-      {/* Role Switcher Toolbar for live demo testing */}
+      {/* Role Switcher Toolbar for internal staff and management testing */}
       <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 text-white text-xs border border-slate-800">
-        <span className="font-semibold text-slate-300">Active View Mode: <strong className="text-indigo-400">{activeRole}</strong></span>
+        <span className="font-semibold text-slate-300">
+          Active View Mode: <strong className="text-indigo-400">{activeRole}</strong>
+        </span>
         <div className="flex space-x-1">
-          {(['CEO', 'PROJECT_MANAGER', 'EDITOR', 'CLIENT', 'ACCOUNTANT', 'SALES'] as Role[]).map((r) => (
+          {(['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'STAFF', 'CEO', 'PROJECT_MANAGER', 'EDITOR', 'ACCOUNTANT', 'SALES'] as Role[]).map((r) => (
             <button
               key={r}
               onClick={() => setOverrideRole(r)}
@@ -35,9 +45,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {activeRole === 'CEO' && <CEODashboard />}
-      {activeRole === 'PROJECT_MANAGER' && <ManagerDashboard />}
-      {activeRole === 'EDITOR' && <EditorDashboard />}
+      {(activeRole === 'CEO' || activeRole === 'SUPER_ADMIN' || activeRole === 'ADMIN') && <CEODashboard />}
+      {(activeRole === 'PROJECT_MANAGER' || activeRole === 'MANAGER') && <ManagerDashboard />}
+      {(activeRole === 'EDITOR' || activeRole === 'STAFF') && <EditorDashboard />}
       {activeRole === 'CLIENT' && <ClientDashboard />}
       {activeRole === 'ACCOUNTANT' && <AccountantDashboard />}
       {activeRole === 'SALES' && <SalesDashboard />}
