@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { saveRegisteredUser, getRegisteredUserByEmail } from '@/lib/registeredUsersStore';
 import { sendVerificationEmail } from '@/lib/emailService';
@@ -46,7 +47,8 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     const newUserObj = {
       id: `user_${Math.random().toString(36).substring(2, 9)}`,
@@ -61,6 +63,8 @@ export async function POST(req: Request) {
       isEmailVerified: false,
       verificationCode,
       verificationExpiry,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpiry,
     };
 
     // Save to shared memory store
@@ -82,20 +86,22 @@ export async function POST(req: Request) {
           isEmailVerified: false,
           verificationCode,
           verificationExpiry,
+          emailVerificationToken: verificationToken,
+          emailVerificationExpires: verificationExpiry,
         } as any,
       });
     } catch (dbErr) {
       console.warn('Prisma create user warning:', dbErr);
     }
 
-    // Send Verification Email
-    await sendVerificationEmail(cleanEmail, verificationCode, firstName);
+    // Send Verification Email with 1-Click Link and OTP Code
+    await sendVerificationEmail(cleanEmail, verificationCode, firstName, verificationToken);
 
     return NextResponse.json({
       success: true,
       requiresVerification: true,
       email: cleanEmail,
-      message: 'Account created! Please check your email for your 6-digit verification code.',
+      message: 'Account created! Please check your email for your verification link and 6-digit code.',
     });
   } catch (error: any) {
     return NextResponse.json(

@@ -20,10 +20,13 @@ const getTransporter = () => {
 export async function sendVerificationEmail(
   toEmail: string,
   code: string,
-  firstName: string = 'User'
+  firstName: string = 'User',
+  token?: string
 ) {
   const appName = 'PostProd Pro';
   const supportEmail = 'support@postprodpro.com';
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const verificationUrl = `${baseUrl}/verify-email?token=${token || code}`;
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -33,14 +36,15 @@ export async function sendVerificationEmail(
   <title>Please verify your identity</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 40px 20px; color: #e2e8f0; }
-    .container { max-width: 540px; margin: 0 auto; background-color: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 40px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
+    .container { max-width: 580px; margin: 0 auto; background-color: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 40px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
     .logo { text-align: center; margin-bottom: 24px; }
     .logo-icon { display: inline-flex; width: 48px; height: 48px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 12px; align-items: center; justify-content: center; color: #ffffff; font-weight: bold; font-size: 24px; line-height: 48px; text-align: center; }
     h1 { font-size: 22px; font-weight: 700; color: #ffffff; text-align: center; margin-top: 0; margin-bottom: 20px; }
-    p { font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px; }
-    .code-box { background-color: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 24px; text-align: center; margin: 32px 0; }
+    p { font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 20px; }
+    .code-box { background-color: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0; }
     .code { font-family: 'JetBrains Mono', 'Courier New', Courier, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #818cf8; margin: 0; }
-    .notice { font-size: 13px; color: #64748b; margin-top: 24px; border-top: 1px solid #334155; padding-top: 20px; }
+    .btn { display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-size: 15px; margin: 16px 0; text-align: center; }
+    .notice { font-size: 13px; color: #64748b; margin-top: 28px; border-top: 1px solid #334155; padding-top: 20px; }
     .footer { text-align: center; font-size: 12px; color: #475569; margin-top: 32px; }
   </style>
 </head>
@@ -50,21 +54,28 @@ export async function sendVerificationEmail(
       <div class="logo-icon">P</div>
     </div>
     <h1>Please verify your identity, ${firstName}</h1>
-    <p>Thanks for registering with ${appName}. Here is your 6-digit verification code to confirm your email address:</p>
+    <p>Thanks for registering with ${appName}. Use either option below to verify your email address:</p>
     
+    <div style="text-align: center;">
+      <a href="${verificationUrl}" class="btn">Click Here to Verify Email (1-Click)</a>
+    </div>
+
+    <p style="text-align: center; font-size: 13px; color: #64748b;">OR enter this 6-digit OTP code in your browser:</p>
+
     <div class="code-box">
       <div class="code">${code}</div>
     </div>
     
-    <p>This code is valid for <strong>15 minutes</strong> and can only be used once.</p>
-    <p><strong>Please don't share this code with anyone:</strong> we'll never ask for it on the phone or via email.</p>
+    <p>This verification link and code are valid for <strong>24 hours</strong>.</p>
+    <p><strong>Please don't share this with anyone:</strong> we'll never ask for it on the phone or via email.</p>
     
     <div class="notice">
-      Navigate back to your browser and enter the code. If you did not request this code, please ignore this email or contact us at <a href="mailto:${supportEmail}" style="color:#818cf8;">${supportEmail}</a>.
+      Or copy and paste this link into your browser: <br>
+      <a href="${verificationUrl}" style="color:#818cf8; word-break: break-all;">${verificationUrl}</a>
     </div>
   </div>
   <div class="footer">
-    &copy; ${new Date().getFullYear()} ${appName} Inc. All rights reserved.
+    &copy; ${new Date().getFullYear()} ${appName} Inc. Bangalore, Karnataka, India.
   </div>
 </body>
 </html>
@@ -77,10 +88,10 @@ export async function sendVerificationEmail(
       await transporter.sendMail({
         from: `"${appName} Security" <${process.env.SMTP_USER || 'no-reply@postprodpro.com'}>`,
         to: toEmail,
-        subject: `${code} is your ${appName} verification code`,
+        subject: `Verify Your Email Address - ${appName}`,
         html: htmlContent,
       });
-      console.log(`[EMAIL SENT] Verification code ${code} sent to ${toEmail}`);
+      console.log(`[EMAIL SENT] Verification email sent to ${toEmail}`);
       return { success: true, method: 'SMTP' };
     } catch (err) {
       console.error(`[EMAIL SMTP ERROR] Failed to send to ${toEmail}:`, err);
@@ -90,17 +101,66 @@ export async function sendVerificationEmail(
   // Local Dev Fallback Logger
   console.log(`
 ===========================================================
-📬 VERIFICATION EMAIL (LOCAL DEV MODE)
+📬 VERIFICATION EMAIL & LINK (LOCAL DEV MODE)
 To: ${toEmail}
-Subject: ${code} is your PostProd Pro verification code
+Subject: Verify Your Email Address - PostProd Pro
 
-Please verify your identity, ${firstName}
-Verification Code: [ ${code} ]
-Valid for: 15 minutes
+Verify Email Link: ${verificationUrl}
+6-Digit OTP Code:  [ ${code} ]
 ===========================================================
   `);
 
-  return { success: true, method: 'DEV_LOG', code };
+  return { success: true, method: 'DEV_LOG', code, verificationUrl };
+}
+
+export async function sendWelcomeEmail(toEmail: string, firstName: string = 'Valued Client') {
+  const appName = 'PostProd Pro';
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Welcome to PostProd Pro</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 40px 20px; color: #e2e8f0; }
+    .container { max-width: 580px; margin: 0 auto; background-color: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 40px; }
+    h1 { font-size: 24px; font-weight: 700; color: #38ef7d; text-align: center; margin-top: 0; }
+    p { font-size: 15px; line-height: 1.6; color: #cbd5e1; }
+    .btn { display: inline-block; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: #ffffff; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 10px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 Welcome, ${firstName}!</h1>
+    <p>Your email address <strong>${toEmail}</strong> has been successfully verified!</p>
+    <p>You now have 100% full access to all features in PostProd Pro Client Portal including project orders, video reviews, invoices, and real-time chat.</p>
+    <div style="text-align: center;">
+      <a href="${baseUrl}/dashboard" class="btn">Explore Your Dashboard →</a>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  const transporter = getTransporter();
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: `"${appName}" <${process.env.SMTP_USER || 'no-reply@postprodpro.com'}>`,
+        to: toEmail,
+        subject: `🎉 Welcome! Your Email is Verified - ${appName}`,
+        html: htmlContent,
+      });
+      return { success: true, method: 'SMTP' };
+    } catch (e) {
+      console.warn('Welcome email error:', e);
+    }
+  }
+
+  console.log(`[WELCOME EMAIL SENT TO]: ${toEmail}`);
+  return { success: true, method: 'DEV_LOG' };
 }
 
 export async function sendGoogleOAuthVerificationConfirmation(
@@ -130,9 +190,6 @@ export async function sendGoogleOAuthVerificationConfirmation(
     .banner strong { color: #1e40af; }
     h2 { font-size: 20px; font-weight: 700; color: #ffffff; margin-top: 0; margin-bottom: 20px; }
     .card { background-color: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-    .row { display: flex; align-items: center; margin-bottom: 16px; }
-    .row:last-child { margin-bottom: 0; }
-    .icon { width: 36px; height: 36px; border-radius: 50%; background: #334155; display: inline-flex; align-items: center; justify-content: center; margin-right: 14px; color: #818cf8; font-weight: bold; }
     .info-label { font-size: 14px; font-weight: 600; color: #ffffff; }
     .info-sub { font-size: 12px; color: #94a3b8; }
     .btn { display: inline-block; background: #6366f1; color: #ffffff; font-weight: 600; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-size: 14px; margin-top: 12px; }
@@ -148,11 +205,11 @@ export async function sendGoogleOAuthVerificationConfirmation(
     <h2>${appName} received and verified your client profile:</h2>
 
     <div class="card">
-      <div className="row" style="margin-bottom: 16px;">
+      <div style="margin-bottom: 16px;">
         <span class="info-label">${name}</span><br>
         <span class="info-sub">Name & Verified Profile Picture</span>
       </div>
-      <div className="row">
+      <div>
         <span class="info-label" style="color:#818cf8;">${toEmail}</span><br>
         <span class="info-sub">Verified Gmail Address</span>
       </div>

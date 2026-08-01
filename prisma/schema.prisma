@@ -66,15 +66,18 @@ model User {
   company         String?
   address         String?
   isActive        Boolean        @default(true)
-  isEmailVerified     Boolean        @default(false)
-  emailVerified       DateTime?
-  verificationCode    String?
-  verificationExpiry  DateTime?
-  lastLoginAt         DateTime?
-  resetToken          String?
-  resetTokenExpiry    DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  isEmailVerified           Boolean        @default(false)
+  emailVerified             DateTime?
+  emailVerifiedAt           DateTime?
+  verificationCode          String?
+  verificationExpiry        DateTime?
+  emailVerificationToken    String?
+  emailVerificationExpires  DateTime?
+  lastLoginAt               DateTime?
+  resetToken                String?
+  resetTokenExpiry          DateTime?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
   
   orders          Order[]        @relation("ClientOrders")
   assignedOrders  Order[]        @relation("AssignedOrders")

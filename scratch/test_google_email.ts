@@ -1,4 +1,4 @@
-import { sendGoogleOAuthVerificationConfirmation } from '../src/lib/emailService.ts';
+import { sendGoogleOAuthVerificationConfirmation } from '../src/lib/emailService';
 
 async function main() {
   console.log('===========================================================');
