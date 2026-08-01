@@ -6,7 +6,13 @@ import { getSharedOrders, addSharedOrder, StoredOrder } from '@/lib/ordersStore'
 
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (sErr) {
+      // Session fallback
+    }
+
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const filterEmail = searchParams.get('email') || session?.user?.email;
@@ -60,7 +66,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    let session = null;
+    try {
+      session = await getServerSession(authOptions);
+    } catch (sErr) {
+      // Session fallback
+    }
+
     const body = await req.json();
     const existingOrders = getSharedOrders();
     const orderNumber = `ORD-2024-${String(existingOrders.length + 1).padStart(3, '0')}`;
@@ -96,7 +108,7 @@ export async function POST(req: Request) {
       },
     };
 
-    // Save to shared memory store
+    // Save to shared store (disk + memory)
     addSharedOrder(newOrderObj);
 
     // Save to Database if connected
