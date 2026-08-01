@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { saveRegisteredUser } from '@/lib/registeredUsersStore';
+import { sendGoogleOAuthVerificationConfirmation } from '@/lib/emailService';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -108,6 +109,11 @@ export async function GET(req: Request) {
         portal: 'CLIENT',
       });
     }
+
+    // Send PostProd Pro Client Identity & Google OAuth Verification Email
+    sendGoogleOAuthVerificationConfirmation(email, `${firstName} ${lastName}`).catch((emailErr) => {
+      console.warn('Google OAuth verification confirmation email background error:', emailErr);
+    });
 
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token || 'mock-refresh-token';
