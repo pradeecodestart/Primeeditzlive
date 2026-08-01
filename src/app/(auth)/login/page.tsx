@@ -51,13 +51,7 @@ function ClientLoginForm() {
     }
   };
 
-  if (!mounted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
-        Loading Client Portal...
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4">

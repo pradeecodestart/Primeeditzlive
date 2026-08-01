@@ -44,10 +44,12 @@ export default withAuth(
           '/',
           '/login',
           '/register',
+          '/signup',
           '/staff/login',
           '/forgot-password',
           '/reset-password',
           '/verify-email',
+          '/orders/new',
         ];
 
         if (pathname.startsWith('/staff/invite/')) {
