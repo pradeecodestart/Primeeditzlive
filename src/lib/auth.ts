@@ -5,9 +5,9 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { getRegisteredUserByEmail } from './registeredUsersStore';
 
-if (!process.env.NEXTAUTH_URL) {
-  process.env.NEXTAUTH_URL = 'http://localhost:3000';
-}
+process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('vercel.app')
+  ? process.env.NEXTAUTH_URL
+  : 'http://localhost:3000';
 
 export type UserRole =
   | 'CEO'
