@@ -50,12 +50,15 @@ export const ManagerDashboard: React.FC = () => {
     refetchInterval: 3000,
   });
 
+  const [statusMessage, setStatusMessage] = useState<string>('');
+
   const handleConfirmAssignment = () => {
     if (!selectedOrder) return;
     const targetEditor = assignedEditor || (teamMembers[0]?.name || 'Mike Chen');
-    alert(`Order ${selectedOrder.orderNumber} assigned to ${targetEditor} with status updated to IN_PROGRESS!`);
+    setStatusMessage(`✅ Order ${selectedOrder.orderNumber} assigned to ${targetEditor}! Moved to IN_PROGRESS.`);
     setSelectedOrder(null);
     refetch();
+    setTimeout(() => setStatusMessage(''), 4000);
   };
 
   return (
@@ -80,6 +83,12 @@ export const ManagerDashboard: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {statusMessage && (
+        <div className="p-3 bg-emerald-500/20 text-emerald-300 rounded-xl border border-emerald-500/40 text-xs font-bold font-mono">
+          {statusMessage}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard title="Total Orders" value={String(orders.length)} icon={ShoppingBag} />

@@ -77,9 +77,12 @@ export const EditorDashboard: React.FC = () => {
   const activeTasks = allOrders.filter((o: Order) => o.status !== 'COMPLETED');
   const selectedOrder = allOrders.find((o: Order) => o.id === selectedTaskId || o.orderNumber === selectedTaskId) || allOrders[0];
 
+  const [statusNotice, setStatusNotice] = useState<string>('');
+
   const handleUpdateProgress = (newVal: number) => {
     setTaskProgress(newVal);
-    alert(`Work status updated to ${newVal}% for ${selectedOrder?.projectName || 'selected task'}!`);
+    setStatusNotice(`✅ Work status updated to ${newVal}% for ${selectedOrder?.projectName || 'selected task'}`);
+    setTimeout(() => setStatusNotice(''), 4000);
   };
 
   return (

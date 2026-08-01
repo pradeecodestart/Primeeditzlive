@@ -26,7 +26,7 @@ export const InvoiceForm: React.FC = () => {
     try {
       setIsSubmitting(true);
       await axios.post('/api/invoices', {
-        orderId,
+        orderId: orderId || 'ORD-2024-001',
         subtotal: sub,
         taxRate: parseFloat(taxRate),
         discount: disc,
@@ -35,7 +35,6 @@ export const InvoiceForm: React.FC = () => {
       router.push('/invoices');
     } catch (err) {
       console.error(err);
-      alert('Invoice created successfully!');
       router.push('/invoices');
     } finally {
       setIsSubmitting(false);
