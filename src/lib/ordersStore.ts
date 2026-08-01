@@ -1,4 +1,7 @@
-// Global shared store for orders to sync created orders across Client, Manager, Sales & Editor dashboards
+// Global disk-persistent store for orders to sync created orders across Client, Manager, Sales & Editor dashboards
+
+import fs from 'fs';
+import path from 'path';
 
 export interface StoredOrder {
   id: string;
@@ -112,20 +115,49 @@ let initialOrders: StoredOrder[] = [
   },
 ];
 
-// Memory store fallback if database is restarting
+const dataDir = path.join(process.cwd(), '.data');
+const filePath = path.join(dataDir, 'orders.json');
+
+function loadOrdersFromDisk(): StoredOrder[] {
+  try {
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Error reading orders from disk:', err);
+  }
+  return [...initialOrders];
+}
+
+function saveOrdersToDisk(orders: StoredOrder[]) {
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(filePath, JSON.stringify(orders, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving orders to disk:', err);
+  }
+}
+
 const globalRef = global as unknown as { __sharedOrdersStore?: StoredOrder[] };
 if (!globalRef.__sharedOrdersStore) {
-  globalRef.__sharedOrdersStore = [...initialOrders];
+  globalRef.__sharedOrdersStore = loadOrdersFromDisk();
 }
 
 export function getSharedOrders(): StoredOrder[] {
-  return globalRef.__sharedOrdersStore || initialOrders;
+  return globalRef.__sharedOrdersStore || loadOrdersFromDisk();
 }
 
 export function addSharedOrder(newOrder: StoredOrder): StoredOrder {
   if (!globalRef.__sharedOrdersStore) {
-    globalRef.__sharedOrdersStore = [...initialOrders];
+    globalRef.__sharedOrdersStore = loadOrdersFromDisk();
   }
   globalRef.__sharedOrdersStore.unshift(newOrder);
+  saveOrdersToDisk(globalRef.__sharedOrdersStore);
   return newOrder;
 }
