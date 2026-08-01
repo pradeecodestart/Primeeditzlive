@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { StatsCard } from './StatsCard';
@@ -14,7 +14,13 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { Order } from '@/types/order';
 
 export const ClientDashboard: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const userName = session?.user?.name || 'Valued Client';
   const firstName = userName.split(' ')[0] || 'Valued Client';
 
@@ -48,8 +54,8 @@ export const ClientDashboard: React.FC = () => {
               <span>Congratulations & Welcome</span>
             </div>
             
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              🎉 Welcome to the Editing World, {firstName}!
+            <h1 suppressHydrationWarning className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              🎉 Welcome to the Editing World, {mounted ? firstName : 'Valued Client'}!
             </h1>
             
             <p className="text-sm text-slate-300 italic font-medium leading-relaxed">
@@ -128,7 +134,7 @@ export const ClientDashboard: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
-              <span>Target SLA Deadline: {formatDate(latestOrder.deadline)}</span>
+              <span suppressHydrationWarning>Target SLA Deadline: {formatDate(latestOrder.deadline)}</span>
               <div className="flex space-x-2">
                 <Link href="/chat">
                   <Button size="sm" variant="outline"><MessageSquare className="h-4 w-4 mr-1" /> Chat with Team</Button>
