@@ -585,7 +585,8 @@ export const OrderForm: React.FC = () => {
                   .map((item) => (
                     <div
                       key={item.id}
-                      className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${
+                      onClick={() => toggleService(item.id)}
+                      className={`p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer select-none ${
                         item.selected
                           ? 'border-indigo-500 bg-indigo-950/40 text-white shadow-lg'
                           : 'border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700'
@@ -605,10 +606,16 @@ export const OrderForm: React.FC = () => {
                       </div>
 
                       {item.selected && (
-                        <div className="flex items-center space-x-1.5 bg-slate-900 border border-slate-700 rounded-lg p-1">
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center space-x-1.5 bg-slate-900 border border-slate-700 rounded-lg p-1"
+                        >
                           <button
                             type="button"
-                            onClick={() => updateQty(item.id, -1)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQty(item.id, -1);
+                            }}
                             className="p-1 hover:bg-slate-800 rounded text-slate-300"
                           >
                             <Minus className="w-3 h-3" />
@@ -618,7 +625,10 @@ export const OrderForm: React.FC = () => {
                           </span>
                           <button
                             type="button"
-                            onClick={() => updateQty(item.id, 1)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateQty(item.id, 1);
+                            }}
                             className="p-1 hover:bg-slate-800 rounded text-slate-300"
                           >
                             <Plus className="w-3 h-3" />
