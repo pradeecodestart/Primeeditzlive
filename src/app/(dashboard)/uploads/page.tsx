@@ -39,6 +39,8 @@ export default function UploadsPage() {
   const userRole = (session?.user as any)?.role || 'CLIENT';
   const isStaffOrAdmin = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'CEO', 'PROJECT_MANAGER'].includes(userRole);
 
+  const [mounted, setMounted] = useState(false);
+
   const fetchFiles = async () => {
     try {
       setLoading(true);
@@ -52,6 +54,7 @@ export default function UploadsPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchFiles();
   }, []);
 
