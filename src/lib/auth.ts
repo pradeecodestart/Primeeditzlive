@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { getRegisteredUserByEmail } from './registeredUsersStore';
+import { sendGoogleOAuthVerificationConfirmation } from './emailService';
 
 process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('vercel.app')
   ? process.env.NEXTAUTH_URL
@@ -75,6 +76,16 @@ export const authOptions: NextAuthOptions = {
           access_type: 'offline',
           response_type: 'code',
         },
+      },
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
+          email: profile.email,
+          image: profile.picture,
+          role: 'CLIENT',
+          portal: 'CLIENT',
+        };
       },
     }),
     CredentialsProvider({
@@ -201,6 +212,41 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
+      if (account?.provider === 'google' && user?.email) {
+        const email = user.email.toLowerCase().trim();
+        const firstName = user.name?.split(' ')[0] || 'Client';
+        const lastName = user.name?.split(' ')[1] || 'User';
+        const avatar = user.image || null;
+
+        try {
+          await prisma.user.upsert({
+            where: { email },
+            update: {
+              firstName,
+              lastName,
+              avatar,
+              isEmailVerified: true,
+              lastLoginAt: new Date(),
+            } as any,
+            create: {
+              email,
+              firstName,
+              lastName,
+              avatar,
+              role: 'CLIENT',
+              portal: 'CLIENT',
+              isEmailVerified: true,
+              lastLoginAt: new Date(),
+            } as any,
+          });
+        } catch (e) {
+          console.warn('Prisma upsert in Google signIn callback:', e);
+        }
+
+        sendGoogleOAuthVerificationConfirmation(email, user.name || firstName).catch((err) =>
+          console.warn('Google OAuth confirmation email error:', err)
+        );
+      }
       return true;
     },
     async jwt({ token, user }) {

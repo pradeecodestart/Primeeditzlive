@@ -47,7 +47,7 @@ function ClientLoginForm() {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = '/api/auth/google/client';
+    signIn('google', { callbackUrl: '/dashboard' });
   };
 
   return (
