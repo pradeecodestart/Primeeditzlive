@@ -1,15 +1,38 @@
 'use client';
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Invoice } from '@/types/invoice';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Sparkles, Printer, Download, Mail, CheckCircle } from 'lucide-react';
+import { Sparkles, Printer, CheckCircle, QrCode, Building2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export const InvoicePreview: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
+  const [ceoSettings, setCeoSettings] = useState({
+    upiId: 'postprodpro@okicici',
+    payeeName: 'Antigravity PostProd Pro Studio',
+    bankName: 'HDFC Bank',
+    accountNumber: '50200088991122',
+    ifscCode: 'HDFC0001234',
+    qrCodeUrl: '',
+  });
+
+  useEffect(() => {
+    fetch('/api/settings/qr-code')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.settings) setCeoSettings(data.settings);
+      })
+      .catch(() => {});
+  }, []);
+
   const handlePrint = () => {
     window.print();
   };
+
+  const taxRate = invoice.taxRate || 18;
+  const taxAmount = invoice.taxAmount || invoice.subtotal * 0.18;
+  const totalAmount = invoice.total || invoice.subtotal + taxAmount;
 
   return (
     <div className="space-y-6">
@@ -23,7 +46,7 @@ export const InvoicePreview: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
             <Printer className="h-4 w-4 mr-2" /> Print / Save PDF
           </Button>
           {invoice.status !== 'PAID' && (
-            <Button size="sm" className="bg-green-600 hover:bg-green-700">
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
               <CheckCircle className="h-4 w-4 mr-2" /> Mark as Paid
             </Button>
           )}
@@ -39,8 +62,8 @@ export const InvoicePreview: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
               <Sparkles className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">PostProd Pro Inc.</h2>
-              <p className="text-xs text-slate-400">Professional Creative Services</p>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">PostProd Pro India</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Post-Production & Creative Studio</p>
             </div>
           </div>
           <div className="text-right">
@@ -56,16 +79,19 @@ export const InvoicePreview: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
         <div className="grid grid-cols-2 gap-6 text-sm">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">From:</span>
-            <p className="font-semibold">PostProd Pro HQ</p>
-            <p className="text-slate-500 text-xs">123 Studio Street, Suite 400</p>
-            <p className="text-slate-500 text-xs">New York, NY 10001</p>
+            <p className="font-semibold text-slate-900 dark:text-white">PostProd Pro India HQ</p>
+            <p className="text-slate-500 text-xs">Indiranagar 100ft Road, Studio Tower</p>
+            <p className="text-slate-500 text-xs">Bangalore, Karnataka - 560038, India</p>
+            <p className="text-slate-500 text-xs font-mono">GSTIN: 29AAAAA0000A1Z5</p>
             <p className="text-slate-500 text-xs">billing@postprodpro.com</p>
           </div>
 
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Billed To:</span>
-            <p className="font-semibold">{invoice.client ? `${invoice.client.firstName} ${invoice.client.lastName}` : 'Client Name'}</p>
-            <p className="text-slate-500 text-xs">{invoice.client?.company || 'Personal Account'}</p>
+            <p className="font-semibold text-slate-900 dark:text-white">
+              {invoice.client ? `${invoice.client.firstName} ${invoice.client.lastName}` : 'Valued Client'}
+            </p>
+            <p className="text-slate-500 text-xs">{invoice.client?.company || 'Client Account'}</p>
             <p className="text-slate-500 text-xs">{invoice.client?.email}</p>
           </div>
         </div>
@@ -75,17 +101,17 @@ export const InvoicePreview: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 text-xs font-semibold uppercase">
               <tr>
-                <th className="p-3 text-left">Description</th>
+                <th className="p-3 text-left">Description & Service</th>
                 <th className="p-3 text-center">Qty</th>
-                <th className="p-3 text-right">Price</th>
-                <th className="p-3 text-right">Total</th>
+                <th className="p-3 text-right">Price (INR ₹)</th>
+                <th className="p-3 text-right">Total (INR ₹)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               <tr>
                 <td className="p-3">
                   <p className="font-semibold text-slate-900 dark:text-slate-100">
-                    {invoice.order?.serviceType || 'Post-Production Retouching'}
+                    {invoice.order?.serviceType || 'Post-Production Photo & Video Retouching'}
                   </p>
                   <p className="text-xs text-slate-400">{invoice.order?.projectName}</p>
                 </td>
@@ -97,16 +123,35 @@ export const InvoicePreview: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
           </table>
         </div>
 
-        {/* Calculation Summary */}
-        <div className="flex justify-end pt-2">
-          <div className="w-64 space-y-2 text-sm">
+        {/* Calculation Summary & CEO QR Code Row */}
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-t border-slate-200 dark:border-slate-800 pt-4">
+          {/* CEO QR Code Picture Section */}
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-center space-y-2">
+            <div className="w-32 h-32 mx-auto bg-white p-2 rounded-xl border-2 border-indigo-500/40 flex items-center justify-center">
+              {ceoSettings.qrCodeUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={ceoSettings.qrCodeUrl}
+                  alt="CEO Payment QR Code"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <QrCode className="w-24 h-24 text-slate-800" />
+              )}
+            </div>
+            <p className="text-[10px] font-bold uppercase text-slate-500">Scan to Pay via UPI (GPay/Paytm)</p>
+            <p className="text-xs font-mono font-bold text-indigo-500">{ceoSettings.upiId}</p>
+          </div>
+
+          {/* Subtotal & Tax Breakdown */}
+          <div className="w-full sm:w-64 space-y-2 text-sm">
             <div className="flex justify-between text-slate-500">
-              <span>Subtotal:</span>
+              <span>Subtotal Before Tax:</span>
               <span>{formatCurrency(invoice.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-slate-500">
-              <span>Tax ({invoice.taxRate}%):</span>
-              <span>{formatCurrency(invoice.taxAmount)}</span>
+            <div className="flex justify-between text-indigo-500 font-medium">
+              <span>GST @ {taxRate}%:</span>
+              <span>{formatCurrency(taxAmount)}</span>
             </div>
             {Number(invoice.discount) > 0 && (
               <div className="flex justify-between text-slate-500">
@@ -115,17 +160,24 @@ export const InvoicePreview: React.FC<{ invoice: Invoice }> = ({ invoice }) => {
               </div>
             )}
             <div className="flex justify-between border-t border-slate-200 dark:border-slate-800 pt-2 text-base font-bold text-slate-900 dark:text-slate-100">
-              <span>Total Amount:</span>
-              <span className="text-indigo-600 dark:text-indigo-400">{formatCurrency(invoice.total)}</span>
+              <span>Total Amount (INR ₹):</span>
+              <span className="text-emerald-500 font-extrabold">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
         </div>
 
-        {/* Footer info */}
-        <div className="border-t border-slate-200 dark:border-slate-800 pt-6 text-xs text-slate-400 space-y-1">
-          <p className="font-semibold text-slate-600 dark:text-slate-300">Payment Terms: Net 15</p>
-          <p>Bank Transfer: First National Bank • Account: XXXX-XXXX-1234 • SWIFT: FNBUS33</p>
-          <p>Thank you for choosing PostProd Pro for your creative workflows!</p>
+        {/* Bank Account Footer */}
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-4 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+          <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+            <Building2 className="w-4 h-4 text-indigo-500" /> NEFT / RTGS / IMPS Direct Bank Transfer:
+          </div>
+          <p>
+            Payee: <span className="font-semibold text-slate-900 dark:text-white">{ceoSettings.payeeName}</span> • Bank: <span className="font-semibold text-slate-900 dark:text-white">{ceoSettings.bankName}</span>
+          </p>
+          <p className="font-mono">
+            Account No: <span className="font-bold text-emerald-500">{ceoSettings.accountNumber}</span> • IFSC: <span className="font-semibold text-slate-900 dark:text-white">{ceoSettings.ifscCode}</span>
+          </p>
+          <p className="pt-1 italic">Thank you for choosing PostProd Pro for your post-production creative workflow!</p>
         </div>
       </div>
     </div>
