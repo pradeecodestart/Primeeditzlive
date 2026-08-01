@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const clientId =
-    process.env.GOOGLE_CLIENT_ID?.trim() ||
-    `${'322742467265'}-${'h1ulas8bao8t7eu6ephn86kibjdj0u97'}.${'apps.googleusercontent.com'}`;
+  const envClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientId = (envClientId && !envClientId.includes('xxxx'))
+    ? envClientId
+    : `${'322742467265'}-${'h1ulas8bao8t7eu6ephn86kibjdj0u97'}.${'apps.googleusercontent.com'}`;
 
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const callbackUrl = `${baseUrl}/api/auth/google/client/callback`;

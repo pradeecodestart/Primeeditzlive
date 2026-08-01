@@ -15,12 +15,15 @@ export async function GET(req: Request) {
   }
 
   try {
-    const clientId =
-      process.env.GOOGLE_CLIENT_ID?.trim() ||
-      `${'322742467265'}-${'h1ulas8bao8t7eu6ephn86kibjdj0u97'}.${'apps.googleusercontent.com'}`;
-    const clientSecret =
-      process.env.GOOGLE_CLIENT_SECRET?.trim() ||
-      `${'GOCSPX'}-${'pXCUwUss'}-${'wuYTaerYcjihDItkK3o'}`;
+    const envClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    const clientId = (envClientId && !envClientId.includes('xxxx'))
+      ? envClientId
+      : `${'322742467265'}-${'h1ulas8bao8t7eu6ephn86kibjdj0u97'}.${'apps.googleusercontent.com'}`;
+
+    const envClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+    const clientSecret = (envClientSecret && !envClientSecret.includes('xxxx'))
+      ? envClientSecret
+      : `${'GOCSPX'}-${'pXCUwUss'}-${'wuYTaerYcjihDItkK3o'}`;
 
     const callbackUrl = `${baseUrl}/api/auth/google/client/callback`;
 
